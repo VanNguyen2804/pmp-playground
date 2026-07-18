@@ -25,7 +25,8 @@ public class PmaExamImporter {
     @Transactional
     public ImportResult importRoot(JsonNode root) {
         JsonNode questionNodes = root.path("exam_attempt").path("exam_content").path("questions");
-        if (!questionNodes.isArray()) throw new IllegalArgumentException("JSON does not contain exam_attempt.exam_content.questions");
+        if (!questionNodes.isArray()) throw new QuestionImportException("JSON không chứa exam_attempt.exam_content.questions.");
+        if (questionNodes.isEmpty()) throw new QuestionImportException("exam_content không chứa câu hỏi nào.");
 
         int total = questionNodes.size(), inserted = 0, updated = 0, skipped = 0;
         List<String> errors = new ArrayList<>();
@@ -43,6 +44,9 @@ public class PmaExamImporter {
                 skipped++;
                 errors.add("Question " + index + ": " + ex.getMessage());
             }
+        }
+        if (total > 0 && inserted == 0 && updated == 0) {
+            throw new QuestionImportException("Không thể import bất kỳ câu hỏi PMA nào.", errors);
         }
         return new ImportResult(total, inserted, updated, skipped, errors);
     }

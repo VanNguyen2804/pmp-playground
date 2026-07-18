@@ -55,6 +55,11 @@ public class QuestionController {
         return service.random(count, categoryCode, questionType);
     }
 
+    @PostMapping("/reclassify")
+    public ReclassificationResult reclassifyAll() {
+        return service.reclassifyAll();
+    }
+
     @PostMapping(value = "/import/csv", consumes = "multipart/form-data")
     public ImportResult importCsv(@RequestPart("file") MultipartFile file) { return service.importCsv(file); }
 

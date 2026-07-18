@@ -81,32 +81,55 @@ public class QuestionService {
         return all.stream().limit(Math.min(Math.max(count, 1), 100)).map(QuestionResponse::from).toList();
     }
 
+    public ReclassificationResult reclassifyAll() {
+        List<Question> questions = repository.findAll();
+        int changed = 0;
+        for (Question question : questions) {
+            String combined = question.getQuestionText() + " "
+                    + question.getOptions().stream().map(QuestionOption::getOptionText).reduce("", (a, b) -> a + " " + b);
+            Set<Category> classified = classifier.classify(combined);
+            question.getCategories().clear();
+            question.getCategories().addAll(classified);
+            repository.save(question);
+            changed++;
+        }
+        return new ReclassificationResult(questions.size(), changed);
+    }
+
     public ImportResult importJson(MultipartFile file) {
+        validateUpload(file, ".json");
         try {
             JsonNode root = objectMapper.readTree(file.getInputStream());
             if (pmaExamImporter.supports(root)) return pmaExamImporter.importRoot(root);
-            if (!root.isArray()) throw new IllegalArgumentException("Generic JSON must be an array, or a PMA exam JSON with exam_attempt.exam_content.questions");
+            if (!root.isArray()) throw new QuestionImportException("JSON phải là một array hoặc có exam_attempt.exam_content.questions.");
             List<QuestionRequest> requests = objectMapper.convertValue(root, new TypeReference<List<QuestionRequest>>() {});
+            if (requests.isEmpty()) throw new QuestionImportException("File JSON không chứa câu hỏi nào.");
             return importRequests(requests);
-        } catch (IllegalArgumentException ex) {
+        } catch (QuestionImportException ex) {
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new QuestionImportException("Không thể chuyển JSON thành câu hỏi: " + ex.getMessage(), ex);
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Cannot read JSON file: " + ex.getMessage(), ex);
+            throw new QuestionImportException("Không thể đọc file JSON: " + ex.getMessage(), ex);
         }
     }
 
     public ImportResult importPmaExam(MultipartFile file) {
+        validateUpload(file, ".json");
         try {
             JsonNode root = objectMapper.readTree(file.getInputStream());
             return pmaExamImporter.importRoot(root);
-        } catch (IllegalArgumentException ex) {
+        } catch (QuestionImportException ex) {
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new QuestionImportException(ex.getMessage(), ex);
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Cannot read PMA exam JSON: " + ex.getMessage(), ex);
+            throw new QuestionImportException("Không thể đọc PMA exam JSON: " + ex.getMessage(), ex);
         }
     }
 
     public ImportResult importCsv(MultipartFile file) {
+        validateUpload(file, ".csv");
         List<QuestionRequest> requests = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         int total = 0;
@@ -119,8 +142,9 @@ public class QuestionService {
                 catch (Exception ex) { errors.add("Row " + record.getRecordNumber() + ": " + ex.getMessage()); }
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Cannot read CSV file: " + ex.getMessage(), ex);
+            throw new QuestionImportException("Không thể đọc file CSV: " + ex.getMessage(), ex);
         }
+        if (total == 0) throw new QuestionImportException("File CSV không chứa dòng dữ liệu nào.");
         ImportResult result = importRequests(requests);
         List<String> merged = new ArrayList<>(errors); merged.addAll(result.errors());
         return new ImportResult(total, result.importedRows(), result.updatedRows(), total - result.importedRows() - result.updatedRows(), merged);
@@ -142,6 +166,9 @@ public class QuestionService {
                 skipped++;
                 errors.add("Item " + (i + 1) + ": " + ex.getMessage());
             }
+        }
+        if (!requests.isEmpty() && inserted == 0 && updated == 0) {
+            throw new QuestionImportException("Không thể import bất kỳ câu hỏi nào.", errors);
         }
         return new ImportResult(requests.size(), inserted, updated, skipped, errors);
     }
@@ -259,6 +286,14 @@ public class QuestionService {
         int answers = safeSet(r.correctAnswers()).size();
         if (r.questionType() == QuestionType.MCQ && answers != 1) throw new IllegalArgumentException("MCQ requires exactly one correct answer");
         if (r.questionType() == QuestionType.MRQ && answers < 2) throw new IllegalArgumentException("MRQ requires two or more correct answers");
+    }
+
+    private void validateUpload(MultipartFile file, String expectedExtension) {
+        if (file == null || file.isEmpty()) throw new QuestionImportException("File upload đang trống.");
+        String filename = Optional.ofNullable(file.getOriginalFilename()).orElse("").toLowerCase(Locale.ROOT);
+        if (!filename.endsWith(expectedExtension)) {
+            throw new QuestionImportException("Định dạng file không hợp lệ. Backend yêu cầu file " + expectedExtension + ".");
+        }
     }
 
     private Question find(Long id) { return repository.findById(id).orElseThrow(() -> new QuestionNotFoundException(id)); }

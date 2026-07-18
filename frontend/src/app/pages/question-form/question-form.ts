@@ -57,7 +57,7 @@ export class QuestionForm implements OnInit {
             explanationReviewStatus: q.explanationReviewStatus ?? 'PENDING',
             explanationReviewNotes: q.explanationReviewNotes ?? '', difficulty: q.difficulty ?? 'MEDIUM',
             reference: q.reference ?? '', tags: q.tags ?? '', categoryCodes: q.categories?.map(c => c.code) ?? [] });
-        }, error: err => this.error = err?.error?.message ?? 'Không thể tải câu hỏi.'
+        }, error: () => this.error = ''
       });
     }
   }
@@ -107,6 +107,6 @@ export class QuestionForm implements OnInit {
     this.saving = true; this.error = '';
     const operation = this.id ? this.service.update(this.id, request) : this.service.create(request);
     operation.subscribe({ next: () => this.router.navigateByUrl('/questions'),
-      error: err => { this.error = err?.error?.message ?? 'Không thể lưu câu hỏi.'; this.saving = false; } });
+      error: () => { this.error = ''; this.saving = false; } });
   }
 }

@@ -20,7 +20,7 @@ export class Practice implements OnInit {
   start(): void {
     this.loading = true; this.error = '';
     this.service.random(10, this.categoryCode).subscribe({ next: questions => { this.questions = questions; this.index = 0; this.score = 0; this.finished = false; this.loading = false; this.prepare(); },
-      error: err => { this.error = err?.error?.message ?? 'Không thể tạo bài luyện tập.'; this.loading = false; } });
+      error: () => { this.error = ''; this.loading = false; } });
   }
 
   toggle(key: string): void {

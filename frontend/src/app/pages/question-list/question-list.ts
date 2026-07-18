@@ -55,7 +55,7 @@ export class QuestionList implements OnInit {
         this.totalElements = result.totalElements;
         this.loading = false;
       },
-      error: err => { this.error = err?.error?.message ?? 'Không thể tải danh sách câu hỏi.'; this.loading = false; }
+      error: () => { this.error = ''; this.loading = false; }
     });
   }
 
@@ -67,6 +67,6 @@ export class QuestionList implements OnInit {
   remove(question: Question): void {
     if (!question.id || !confirm('Xóa câu hỏi này?')) return;
     this.service.delete(question.id).subscribe({ next: () => this.load(this.page),
-      error: err => this.error = err?.error?.message ?? 'Không thể xóa câu hỏi.' });
+      error: () => this.error = '' });
   }
 }

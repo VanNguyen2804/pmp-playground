@@ -7,12 +7,7 @@
   <input [(ngModel)]="search" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, mọi lời giải hoặc tag">
   <select [(ngModel)]="categoryCode">
     <option value="">Mọi category</option>
-    <optgroup label="PMBOK 8">
-      <option *ngFor="let c of categories" [hidden]="c.taxonomy !== 'PMBOK8_DOMAIN'" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
-    </optgroup>
-    <optgroup label="PMA Handout">
-      <option *ngFor="let c of categories" [hidden]="c.taxonomy !== 'PMA_HANDOUT_TOPIC'" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
-    </optgroup>
+    <option *ngFor="let c of categories" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
   </select>
   <select [(ngModel)]="questionType"><option value="">Mọi loại</option><option value="MCQ">MCQ</option><option value="MRQ">MRQ</option><option value="MATCHING">Matching</option></select>
   <select [(ngModel)]="difficulty"><option value="">Mọi độ khó</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select>

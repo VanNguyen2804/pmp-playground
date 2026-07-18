@@ -1,9 +1,26 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const host = process.env.API_BASE_HOST?.trim();
-const explicitUrl = process.env.API_BASE_URL?.trim();
-const apiBaseUrl = explicitUrl || (host ? `https://${host}/api` : 'http://localhost:8080/api');
+function normalizeApiBaseUrl(value) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) return '';
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+const configuredUrl = process.env.API_BASE_URL?.trim() || '';
+const isRenderBuild = process.env.RENDER === 'true';
+
+if (isRenderBuild && !configuredUrl) {
+  throw new Error(
+    'API_BASE_URL is required for the Render frontend build. ' +
+    'Set it to the public backend URL, for example https://pmp-playground-api.onrender.com, ' +
+    'or deploy with the included render.yaml Blueprint.'
+  );
+}
+
+const apiBaseUrl = normalizeApiBaseUrl(
+  configuredUrl || 'http://localhost:8080'
+);
 const outputPath = resolve('public/app-config.json');
 
 await mkdir(resolve('public'), { recursive: true });

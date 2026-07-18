@@ -61,8 +61,8 @@ Stores the correct left/right mapping for matching questions.
 
 Stores two taxonomies:
 
-- `PMBOK8_DOMAIN`: Governance, Scope & Quality, Schedule, Finance, Stakeholders, Resources, Risk.
-- `PMA_HANDOUT_TOPIC`: Integration & Change, Scope & Requirements, Schedule, Cost & EVM, Quality, Resources/Team/Leadership, Communications/Stakeholders, Risk, Procurement, Agile/Hybrid, Business Environment/Compliance, Closing/Knowledge.
+- `PMP_TOPIC`: unified study topics derived from PMBOK 8 and PMA Handout, including Project Management, Agile & Hybrid, Risk, Scope, Schedule, Cost, Quality, Resources/Team, Stakeholders/Communication, Procurement, Governance/Change, Business Environment/Compliance, Closing/Knowledge, and Tools/Artifacts.
+- `PMBOK8_DOMAIN` and `PMA_HANDOUT_TOPIC` are retained only as legacy enum values so existing databases can migrate safely; legacy rows are marked inactive.
 
 ### `question_categories`
 

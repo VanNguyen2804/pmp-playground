@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, Taxonomy } from '../models/question';
+import { CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -58,6 +58,10 @@ export class QuestionService {
     form.append('file', file);
     const type = file.name.toLowerCase().endsWith('.json') ? 'json' : 'csv';
     return this.http.post<ImportResult>(`${this.questionsUrl}/import/${type}`, form);
+  }
+
+  reclassifyAll(): Observable<ReclassificationResult> {
+    return this.http.post<ReclassificationResult>(`${this.questionsUrl}/reclassify`, {});
   }
 
   random(count = 10, categoryCode?: string, questionType?: QuestionType): Observable<Question[]> {

@@ -14,18 +14,36 @@ import { QuestionService } from '../../services/question.service';
 export class Categories implements OnInit {
   categories: CategorySummary[] = [];
   loading = false;
-  error = '';
+  reclassifying = false;
+  success = '';
 
   constructor(private readonly service: QuestionService) {}
 
   ngOnInit(): void {
-    this.loading = true;
-    this.service.categories().subscribe({
-      next: categories => { this.categories = categories; this.loading = false; },
-      error: err => { this.error = err?.error?.message ?? 'Không thể tải categories.'; this.loading = false; }
+    this.load();
+  }
+
+  reclassify(): void {
+    this.reclassifying = true;
+    this.success = '';
+    this.service.reclassifyAll().subscribe({
+      next: result => {
+        this.success = `Đã phân loại lại ${result.reclassifiedQuestions}/${result.totalQuestions} câu hỏi.`;
+        this.reclassifying = false;
+        this.load();
+      },
+      error: () => this.reclassifying = false
     });
   }
 
-  get pmbokCategories(): CategorySummary[] { return this.categories.filter(c => c.taxonomy === 'PMBOK8_DOMAIN'); }
-  get pmaCategories(): CategorySummary[] { return this.categories.filter(c => c.taxonomy === 'PMA_HANDOUT_TOPIC'); }
+  private load(): void {
+    this.loading = true;
+    this.service.categories('PMP_TOPIC').subscribe({
+      next: categories => {
+        this.categories = categories;
+        this.loading = false;
+      },
+      error: () => this.loading = false
+    });
+  }
 }

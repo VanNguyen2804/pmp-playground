@@ -16,6 +16,6 @@ export class ImportQuestions {
     if (!this.selected) return;
     this.uploading = true; this.error = '';
     this.service.importFile(this.selected).subscribe({ next: result => { this.result = result; this.uploading = false; },
-      error: err => { this.error = err?.error?.message ?? 'Upload thất bại.'; this.uploading = false; } });
+      error: () => { this.error = ''; this.uploading = false; } });
   }
 }

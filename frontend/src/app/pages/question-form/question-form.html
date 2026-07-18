@@ -57,7 +57,7 @@
     <label>Ghi chú so sánh</label><textarea rows="3" formControlName="explanationReviewNotes" placeholder="Ví dụ: PMA đúng đáp án nhưng AI giải thích rõ hơn; bản cuối kết hợp cả hai."></textarea>
   </section>
 
-  <label>Categories</label><select multiple size="8" formControlName="categoryCodes"><option *ngFor="let c of categories" [value]="c.code">{{ c.taxonomy === 'PMBOK8_DOMAIN' ? 'PMBOK8' : 'PMA' }} · {{ c.name }}</option></select>
+  <label>Categories</label><select multiple size="12" formControlName="categoryCodes"><option *ngFor="let c of categories" [value]="c.code">{{ c.name }}</option></select>
   <div class="fields-grid"><div><label>Reference</label><input formControlName="reference"></div><div><label>Tags</label><input formControlName="tags"></div></div>
   <p class="error" *ngIf="error">{{ error }}</p><div class="actions"><a class="button ghost" routerLink="/questions">Hủy</a><button class="button primary" type="submit" [disabled]="saving">{{ saving ? 'Đang lưu...' : 'Lưu câu hỏi' }}</button></div>
 </form>

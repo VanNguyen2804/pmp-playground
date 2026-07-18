@@ -12,24 +12,36 @@ import java.util.Set;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     private final String[] allowedOrigins;
+    private final String[] allowedOriginPatterns;
 
     public WebConfig(
             @Value("${app.cors.allowed-origins:http://localhost:4200}") String origins,
-            @Value("${app.cors.allowed-hosts:}") String hosts
+            @Value("${app.cors.allowed-hosts:}") String hosts,
+            @Value("${app.cors.allowed-origin-patterns:}") String originPatterns
     ) {
-        Set<String> values = new LinkedHashSet<>();
-        addCsv(values, origins, false);
-        addCsv(values, hosts, true);
-        this.allowedOrigins = values.toArray(String[]::new);
+        Set<String> originValues = new LinkedHashSet<>();
+        addCsv(originValues, origins, false);
+        addCsv(originValues, hosts, true);
+        this.allowedOrigins = originValues.toArray(String[]::new);
+
+        Set<String> patternValues = new LinkedHashSet<>();
+        addCsv(patternValues, originPatterns, false);
+        this.allowedOriginPatterns = patternValues.toArray(String[]::new);
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins)
+        var registration = registry.addMapping("/api/**")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .maxAge(3600);
+
+        if (allowedOrigins.length > 0) {
+            registration.allowedOrigins(allowedOrigins);
+        }
+        if (allowedOriginPatterns.length > 0) {
+            registration.allowedOriginPatterns(allowedOriginPatterns);
+        }
     }
 
     private static void addCsv(Set<String> values, String csv, boolean hostOnly) {

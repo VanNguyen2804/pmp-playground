@@ -52,7 +52,7 @@ export class ExplanationReview implements OnInit {
           explanationReviewNotes: question.explanationReviewNotes ?? ''
         });
       },
-      error: err => this.error = err?.error?.message ?? 'Không thể tải câu hỏi.'
+      error: () => this.error = ''
     });
   }
 
@@ -85,7 +85,7 @@ export class ExplanationReview implements OnInit {
     this.service.updateExplanations(this.question.id, this.form.getRawValue()).subscribe({
       next: () => this.router.navigateByUrl('/questions'),
       error: err => {
-        this.error = err?.error?.message ?? 'Không thể lưu lời giải.';
+        this.error = '';
         this.saving = false;
       }
     });

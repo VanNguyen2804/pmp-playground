@@ -43,34 +43,26 @@ Some question images use temporary signed URLs. The URL is preserved, but it may
 
 ## Category taxonomy
 
-Questions use a many-to-many category model. The importer applies initial keyword-based classification; users can correct categories manually.
+Categories are now **study topics**, not a duplicate split between PMBOK domains and PMA topics. The active taxonomy is `PMP_TOPIC`, derived from PMBOK 8 and the PMA handout.
 
-### PMBOK 8 domains
-
-- Governance
-- Scope & Quality
-- Schedule
-- Finance
-- Stakeholders
-- Resources
-- Risk
-
-### PMA Handout topics
-
-- Integration & Change
-- Scope & Requirements
-- Schedule
-- Cost & EVM
-- Quality
-- Resources, Team & Leadership
-- Communications & Stakeholders
-- Risk
-- Procurement
+- Project Management
 - Agile & Hybrid
+- Risk Management
+- Scope & Requirements
+- Schedule Management
+- Cost & Finance
+- Quality Management
+- Resource, Team & Leadership Management
+- Stakeholder & Communication Management
+- Procurement Management
+- Governance & Change Management
 - Business Environment & Compliance
-- Closing & Knowledge
+- Closing & Knowledge Management
+- Tools, Models & Artifacts
 
-See [DATABASE_DESIGN.md](DATABASE_DESIGN.md) for the ERD and table details.
+Legacy category rows are retained but marked inactive so existing PostgreSQL/Neon databases continue to start safely. Open **Categories → Phân loại lại toàn bộ** after deployment, or call `POST /api/questions/reclassify`, to replace old question-category links with the unified topics.
+
+See [DATABASE_DESIGN.md](DATABASE_DESIGN.md) and [docs/ERROR_HANDLING_AND_CATEGORIES.md](docs/ERROR_HANDLING_AND_CATEGORIES.md).
 
 ## Repository structure
 
@@ -146,7 +138,8 @@ The import is idempotent. PMA `id` is stored as `external_id`; importing the sam
 - `PUT /api/questions/{id}`
 - `PUT /api/questions/{id}/explanations` — update PMA, AI, final explanation, and review metadata without modifying the question
 - `DELETE /api/questions/{id}`
-- `GET /api/questions/random?count=10&categoryCode=PMA_AGILE_HYBRID`
+- `GET /api/questions/random?count=10&categoryCode=TOPIC_AGILE_HYBRID`
+- `POST /api/questions/reclassify` — reclassify all existing questions into unified topics
 
 ### Imports
 
@@ -157,8 +150,7 @@ The import is idempotent. PMA `id` is stored as `external_id`; importing the sam
 ### Categories
 
 - `GET /api/categories`
-- `GET /api/categories?taxonomy=PMBOK8_DOMAIN`
-- `GET /api/categories?taxonomy=PMA_HANDOUT_TOPIC`
+- `GET /api/categories?taxonomy=PMP_TOPIC`
 
 ## Generic question JSON
 
@@ -181,9 +173,16 @@ The import is idempotent. PMA `id` is stored as `external_id`; importing the sam
   "explanationReviewStatus": "REVIEWED",
   "explanationReviewNotes": "PMA answer retained; AI reasoning made clearer.",
   "source": "MANUAL",
-  "categoryCodes": ["P8_RESOURCES", "PMA_RESOURCE_TEAM"]
+  "categoryCodes": ["TOPIC_RESOURCE_TEAM", "TOPIC_AGILE_HYBRID"]
 }
 ```
+
+
+## API error contract and frontend modal
+
+Backend failures use one JSON contract containing `code`, `message`, `fieldErrors`, `details`, `path`, and `traceId`. Angular catches failed HTTP requests in a global interceptor and displays them in a modal. The observable error is rethrown so page loading/saving states still reset correctly.
+
+Typical backend codes include `VALIDATION_ERROR`, `QUESTION_NOT_FOUND`, `QUESTION_IMPORT_FAILED`, `DATA_CONFLICT`, `FILE_TOO_LARGE`, and `INTERNAL_ERROR`.
 
 ## Production deployment on Render + Neon
 
@@ -213,3 +212,7 @@ dist/frontend/browser
 ## Security
 
 Never commit database passwords, GitHub tokens, or production secrets. Use Render environment variables.
+
+## Frontend cannot call backend
+
+See [`docs/FRONTEND_BACKEND_CONNECTION.md`](docs/FRONTEND_BACKEND_CONNECTION.md). The production frontend must use the backend's public URL through `API_BASE_URL`; a Render private service hostname cannot be called from the browser.

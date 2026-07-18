@@ -20,6 +20,6 @@
     "source": "JSON",
     "reference": "PMBOK 8 / PMA Resource topic",
     "tags": "training,resource",
-    "categoryCodes": ["P8_RESOURCES", "PMA_RESOURCE_TEAM"]
+    "categoryCodes": ["TOPIC_RESOURCE_TEAM"]
   }
 ]

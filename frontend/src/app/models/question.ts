@@ -4,7 +4,7 @@ export type QuestionSource = 'PMA' | 'MANUAL' | 'CSV' | 'JSON';
 export type ExplanationStatus = 'NOT_PROVIDED' | 'IMPORTED' | 'MANUAL';
 export type FinalExplanationSource = 'NONE' | 'PMA' | 'AI' | 'MERGED' | 'MANUAL';
 export type ExplanationReviewStatus = 'PENDING' | 'REVIEWED';
-export type Taxonomy = 'PMBOK8_DOMAIN' | 'PMA_HANDOUT_TOPIC';
+export type Taxonomy = 'PMP_TOPIC' | 'PMBOK8_DOMAIN' | 'PMA_HANDOUT_TOPIC';
 
 export interface QuestionOption {
   id?: number;
@@ -84,4 +84,21 @@ export interface ImportResult {
   updatedRows: number;
   skippedRows: number;
   errors: string[];
+}
+
+export interface ApiErrorResponse {
+  timestamp: string;
+  status: number;
+  error: string;
+  code: string;
+  message: string;
+  path?: string;
+  fieldErrors?: Record<string, string>;
+  details?: string[];
+  traceId?: string;
+}
+
+export interface ReclassificationResult {
+  totalQuestions: number;
+  reclassifiedQuestions: number;
 }
