@@ -29,6 +29,8 @@ services:
     staticPublishPath: ./dist/frontend/browser
     autoDeployTrigger: commit
     envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
       - key: API_BASE_HOST
         fromService:
           name: pmp-playground-api
