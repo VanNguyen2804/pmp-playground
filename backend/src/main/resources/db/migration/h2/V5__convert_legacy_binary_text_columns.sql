@@ -1,0 +1,2 @@
+-- PostgreSQL-only compatibility migration.
+-- H2 baseline columns are already CLOB/VARCHAR-compatible, so no change is required.

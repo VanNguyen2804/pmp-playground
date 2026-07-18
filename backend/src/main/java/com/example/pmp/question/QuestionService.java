@@ -41,9 +41,9 @@ public class QuestionService {
                                        ExplanationReviewStatus reviewStatus, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
                 Sort.by(Sort.Direction.DESC, "updatedAt"));
-        return repository.search(blankToNull(search), blankToNull(categoryCode), taxonomy, difficulty,
-                        questionType, reviewStatus, reviewStatus == ExplanationReviewStatus.PENDING, pageable)
-                .map(QuestionResponse::from);
+        var specification = QuestionSpecifications.filters(
+                blankToNull(search), blankToNull(categoryCode), taxonomy, difficulty, questionType, reviewStatus);
+        return repository.findAll(specification, pageable).map(QuestionResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -75,8 +75,9 @@ public class QuestionService {
 
     @Transactional(readOnly = true)
     public List<QuestionResponse> random(int count, String categoryCode, QuestionType questionType) {
-        List<Question> all = new ArrayList<>(repository.search(null, blankToNull(categoryCode), null, null,
-                questionType, null, false, Pageable.unpaged()).getContent());
+        var specification = QuestionSpecifications.filters(
+                null, blankToNull(categoryCode), null, null, questionType, null);
+        List<Question> all = new ArrayList<>(repository.findAll(specification));
         Collections.shuffle(all);
         return all.stream().limit(Math.min(Math.max(count, 1), 100)).map(QuestionResponse::from).toList();
     }

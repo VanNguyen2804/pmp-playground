@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -89,6 +91,24 @@ public class ApiExceptionHandler {
                 Map.of(), List.of());
     }
 
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiErrorResponse> databaseError(DataAccessException ex, HttpServletRequest request) {
+        String traceId = newTraceId();
+        Throwable rootCause = mostSpecificCause(ex);
+        String sqlState = rootCause instanceof SQLException sqlException ? sqlException.getSQLState() : null;
+
+        log.error("Database API error traceId={} method={} path={} sqlState={}",
+                traceId, request.getMethod(), request.getRequestURI(), sqlState, ex);
+
+        List<String> details = sqlState == null || sqlState.isBlank()
+                ? List.of()
+                : List.of("SQLState: " + sqlState);
+
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, "DATABASE_QUERY_FAILED",
+                "Không thể đọc dữ liệu từ database. Vui lòng thử lại sau khi migration hoàn tất.",
+                request, Map.of(), details, traceId);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> unexpected(Exception ex, HttpServletRequest request) {
         String traceId = newTraceId();
@@ -113,7 +133,17 @@ public class ApiExceptionHandler {
                 request.getRequestURI(), fieldErrors == null ? Map.of() : fieldErrors,
                 details == null ? List.of() : details, traceId
         );
-        return ResponseEntity.status(status).body(body);
+        return ResponseEntity.status(status)
+                .header("X-Trace-Id", traceId)
+                .body(body);
+    }
+
+    private Throwable mostSpecificCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     private String newTraceId() {

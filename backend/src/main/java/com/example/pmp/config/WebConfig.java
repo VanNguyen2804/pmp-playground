@@ -34,6 +34,7 @@ public class WebConfig implements WebMvcConfigurer {
         var registration = registry.addMapping("/api/**")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
+                .exposedHeaders("X-Trace-Id")
                 .maxAge(3600);
 
         if (allowedOrigins.length > 0) {

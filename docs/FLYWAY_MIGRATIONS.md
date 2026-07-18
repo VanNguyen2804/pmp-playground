@@ -70,3 +70,7 @@ order by installed_rank;
 - Fix a migration with a new higher version.
 - Keep `spring.flyway.clean-disabled=true` in production.
 - Back up important data before destructive migrations.
+
+## V5: legacy PostgreSQL text repair
+
+`V5__convert_legacy_binary_text_columns.sql` converts old `bytea` or `oid` columns created by historical LOB mappings into PostgreSQL `text`. This prevents `lower(bytea)` failures in question search. See `docs/FIX_LOWER_BYTEA.md`.

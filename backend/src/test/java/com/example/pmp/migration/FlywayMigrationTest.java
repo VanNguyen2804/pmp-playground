@@ -32,7 +32,7 @@ class FlywayMigrationTest {
                 Integer.class
         );
 
-        assertThat(migrationCount).isGreaterThanOrEqualTo(4);
+        assertThat(migrationCount).isGreaterThanOrEqualTo(5);
         assertThat(categoryCount).isEqualTo(14);
     }
 }
