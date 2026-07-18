@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "generate-config": "node scripts/generate-config.mjs",
+    "prestart": "npm run generate-config",
+    "prebuild": "npm run generate-config"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

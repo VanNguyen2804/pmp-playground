@@ -1,14 +1,22 @@
-# Java
+# Java / Spring Boot
 backend/target/
 backend/data/
+*.log
 
-# Angular
+# Angular / Node
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
 
 # IDE / OS
 .idea/
 .vscode/
 *.iml
 .DS_Store
+Thumbs.db

@@ -1,13 +1,19 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
 import { Difficulty, ImportResult, PageResponse, Question } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
-  private readonly apiUrl = 'http://localhost:8080/api/questions';
+  private readonly apiUrl: string;
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    @Inject(APP_RUNTIME_CONFIG) config: AppRuntimeConfig
+  ) {
+    this.apiUrl = `${config.apiBaseUrl.replace(/\/$/, '')}/questions`;
+  }
 
   list(filters: {
     search?: string;

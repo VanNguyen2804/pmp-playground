@@ -1,0 +1,12 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/pmpdb;AUTO_SERVER=TRUE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
