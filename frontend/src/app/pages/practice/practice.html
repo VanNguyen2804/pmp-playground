@@ -1,5 +1,6 @@
 <section class="page-header"><div><h1>Luyện tập PMP</h1><p>MCQ, MRQ và Matching từ dữ liệu PMA.</p></div><div class="practice-filter"><select [(ngModel)]="categoryCode"><option value="">Mọi category</option><option *ngFor="let c of categories" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option></select><button class="button ghost" (click)="start()">Tạo bộ mới</button></div></section>
-<p class="error" *ngIf="error">{{ error }}</p><p *ngIf="loading">Đang tải...</p>
+<section class="card request-state" *ngIf="loading"><span>Đang tải bộ câu hỏi...</span><button class="button ghost" type="button" (click)="start()">Hủy request cũ và tải lại</button></section>
+<section class="card request-state error-state" *ngIf="!loading && error"><span>{{ error }}</span><button class="button primary" type="button" (click)="start()">Tạo lại bộ câu hỏi</button></section>
 <section class="card result" *ngIf="finished"><h2>Kết quả: {{ score }} / {{ questions.length }}</h2><button class="button primary" (click)="start()">Làm lại</button></section>
 <section class="card quiz" *ngIf="!loading && !finished && current as q">
   <div class="progress">Câu {{ index + 1 }} / {{ questions.length }} · {{ q.questionType }} · Điểm {{ score }}</div>

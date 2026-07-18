@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize, Subscription } from 'rxjs';
 import { CategorySummary, Question } from '../../models/question';
 import { QuestionService } from '../../services/question.service';
 
 @Component({ selector: 'app-practice', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './practice.html', styleUrl: './practice.css' })
-export class Practice implements OnInit {
+export class Practice implements OnInit, OnDestroy {
   questions: Question[] = [];
   categories: CategorySummary[] = [];
   index = 0; score = 0; finished = false; categoryCode = ''; loading = false; error = ''; revealed = false;
@@ -13,14 +14,37 @@ export class Practice implements OnInit {
   matching: Record<string, string> = {};
   matchingChoices: string[] = [];
 
+  private loadSubscription?: Subscription;
+
   constructor(private readonly service: QuestionService) {}
-  ngOnInit(): void { this.service.categories().subscribe({next: c => this.categories = c}); this.start(); }
+
+  ngOnInit(): void {
+    this.service.categories().subscribe({ next: c => this.categories = c });
+    this.start();
+  }
+
+  ngOnDestroy(): void {
+    this.loadSubscription?.unsubscribe();
+  }
+
   get current(): Question | undefined { return this.questions[this.index]; }
 
   start(): void {
-    this.loading = true; this.error = '';
-    this.service.random(10, this.categoryCode).subscribe({ next: questions => { this.questions = questions; this.index = 0; this.score = 0; this.finished = false; this.loading = false; this.prepare(); },
-      error: () => { this.error = ''; this.loading = false; } });
+    this.loadSubscription?.unsubscribe();
+    this.loading = true;
+    this.error = '';
+    this.loadSubscription = this.service.random(10, this.categoryCode).pipe(
+      finalize(() => this.loading = false)
+    ).subscribe({
+      next: questions => {
+        this.questions = questions;
+        this.index = 0;
+        this.score = 0;
+        this.finished = false;
+        this.prepare();
+      },
+      error: () => this.error = 'Không tải được bộ câu hỏi. Nhấn “Tạo lại bộ câu hỏi” để thử lại.'
+    });
   }
 
   toggle(key: string): void {
@@ -52,7 +76,6 @@ export class Practice implements OnInit {
     const chosen = Object.keys(this.selected).filter(k => this.selected[k]).sort();
     return JSON.stringify(chosen) === JSON.stringify([...q.correctAnswers].sort());
   }
-
 
   explanationText(question: Question): string | null {
     return question.finalExplanation?.trim() || question.aiExplanation?.trim() || question.pmaExplanation?.trim() || null;

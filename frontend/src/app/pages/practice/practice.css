@@ -11,3 +11,16 @@
 .result, .empty { text-align: center; max-width: 600px; margin: auto; }
 .explanation-label { margin-bottom: 6px; color: #166534; }
 .explanation-text { white-space: pre-wrap; line-height: 1.65; }
+
+.request-state {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.error-state {
+  border-color: rgba(180, 35, 35, 0.4);
+}

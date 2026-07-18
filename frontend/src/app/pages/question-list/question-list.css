@@ -19,3 +19,44 @@
 .review-notes { margin: 0 12px 12px; padding: 9px; background: #fff7ed; border-radius: 8px; }
 @media (max-width: 1100px) { .filters { grid-template-columns: 1fr 1fr; } .explanation-columns { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .filters { grid-template-columns: 1fr; } }
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.request-state {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.request-state > div:nth-child(2),
+.request-state > div:first-child:not(.spinner) {
+  flex: 1;
+}
+
+.request-state p {
+  margin: 0.25rem 0 0;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(0, 0, 0, 0.15);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: question-list-spin 0.8s linear infinite;
+  flex: 0 0 auto;
+}
+
+.error-state {
+  border-color: rgba(180, 35, 35, 0.4);
+}
+
+@keyframes question-list-spin {
+  to { transform: rotate(360deg); }
+}

@@ -9,4 +9,8 @@ import { ErrorModal } from './shared/error-modal/error-modal';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {}
+export class App {
+  refresh(): void {
+    window.location.reload();
+  }
+}

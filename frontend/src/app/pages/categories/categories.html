@@ -3,12 +3,16 @@
     <h1>Categories học PMP</h1>
     <p>Các chủ đề được chuẩn hóa từ PMBOK 8 và PMA Handout, ví dụ Risk Management, Agile & Hybrid và Project Management.</p>
   </div>
-  <button class="button ghost" type="button" (click)="reclassify()" [disabled]="reclassifying || loading">
-    {{ reclassifying ? 'Đang phân loại...' : 'Phân loại lại toàn bộ' }}
-  </button>
+  <div class="header-actions">
+    <button class="button ghost" type="button" (click)="load()">↻ Tải lại</button>
+    <button class="button ghost" type="button" (click)="reclassify()" [disabled]="reclassifying || loading">
+      {{ reclassifying ? 'Đang phân loại...' : 'Phân loại lại toàn bộ' }}
+    </button>
+  </div>
 </section>
 <p class="success" *ngIf="success">{{ success }}</p>
-<p *ngIf="loading">Đang tải...</p>
+<section class="card request-state" *ngIf="loading"><strong>Đang tải categories...</strong><button class="button ghost" type="button" (click)="load()">Tải lại</button></section>
+<section class="card request-state error-state" *ngIf="!loading && error"><span>{{ error }}</span><button class="button primary" type="button" (click)="load()">Tải lại</button></section>
 
 <section *ngIf="!loading">
   <div class="category-grid">

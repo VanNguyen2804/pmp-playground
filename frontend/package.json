@@ -9,7 +9,8 @@
     "test": "ng test",
     "generate-config": "node scripts/generate-config.mjs",
     "prestart": "npm run generate-config",
-    "prebuild": "npm run generate-config"
+    "prebuild": "npm run generate-config",
+    "postbuild": "node scripts/create-spa-fallback.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

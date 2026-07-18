@@ -1,1 +1,18 @@
 .category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}.category-card{position:relative;text-decoration:none;color:inherit;transition:transform .15s ease}.category-card:hover{transform:translateY(-2px)}.category-card h3{margin:.2rem 3rem .5rem 0}.category-card p{color:var(--muted);min-height:4.5rem}.category-card code{font-size:.72rem;color:#64748b}.count{position:absolute;right:1rem;top:1rem;background:#eaf2ff;border-radius:999px;padding:.25rem .6rem;font-weight:700}.success{color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 12px;border-radius:8px}
+
+.header-actions,
+.request-state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.request-state {
+  justify-content: space-between;
+  margin: 1rem 0;
+}
+
+.error-state {
+  border-color: rgba(180, 35, 35, 0.4);
+}

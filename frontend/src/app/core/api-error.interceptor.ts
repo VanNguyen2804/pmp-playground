@@ -1,19 +1,44 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, from, mergeMap, Observable, of, throwError } from 'rxjs';
+import {
+  catchError,
+  from,
+  mergeMap,
+  Observable,
+  of,
+  throwError,
+  timeout,
+  TimeoutError
+} from 'rxjs';
 import { ApiErrorResponse } from '../models/question';
 import { ErrorModalService } from './error-modal.service';
+
+const API_TIMEOUT_MS = 120_000;
 
 export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const modal = inject(ErrorModalService);
 
   return next(request).pipe(
+    timeout({ first: API_TIMEOUT_MS }),
     catchError((error: unknown) => {
+      if (error instanceof TimeoutError) {
+        modal.show({
+          title: 'Backend phản hồi quá lâu',
+          message:
+            'Request đã chờ quá 120 giây. Backend có thể đang khởi động, đang chạy migration hoặc gặp sự cố kết nối database. Hãy nhấn Tải lại để thử lại.',
+          code: 'BACKEND_TIMEOUT',
+          path: request.url,
+          details: ['Timeout: 120 giây']
+        });
+        return throwError(() => error);
+      }
+
       if (!(error instanceof HttpErrorResponse)) {
         modal.show({
           title: 'Lỗi ứng dụng',
           message: error instanceof Error ? error.message : 'Đã xảy ra lỗi ngoài dự kiến.',
-          code: 'CLIENT_ERROR'
+          code: 'CLIENT_ERROR',
+          path: request.url
         });
         return throwError(() => error);
       }
@@ -31,7 +56,7 @@ export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
             details: body?.details
           });
 
-          // Rethrow so each page can still reset loading/saving/uploading state.
+          // Rethrow so every page can stop loading/saving/uploading in finalize().
           return throwError(() => error);
         })
       );
@@ -81,7 +106,7 @@ function titleFor(status: number): string {
 
 function fallbackMessage(error: HttpErrorResponse): string {
   if (error.status === 0) {
-    return 'Frontend không gọi được backend. Hãy kiểm tra API_BASE_URL, trạng thái backend và cấu hình CORS.';
+    return 'Frontend không gọi được backend. Hãy kiểm tra API_BASE_URL, trạng thái backend, HTTPS và cấu hình CORS.';
   }
   if (typeof error.error === 'string' && error.error.trim()) return error.error;
   return error.message || 'Request không thể hoàn tất.';

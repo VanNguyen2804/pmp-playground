@@ -1,6 +1,9 @@
 <section class="page-header">
   <div><h1>Ngân hàng câu hỏi PMP</h1><p>{{ totalElements }} câu hỏi đã lưu. So sánh PMA và ChatGPT trước khi chốt lời giải cuối.</p></div>
-  <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
+  <div class="header-actions">
+    <button class="button ghost" type="button" (click)="refresh()">↻ Tải lại dữ liệu</button>
+    <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
+  </div>
 </section>
 
 <section class="card filters">
@@ -16,7 +19,18 @@
   <button class="button ghost" (click)="clearFilters()">Xóa lọc</button>
 </section>
 
-<p class="error" *ngIf="error">{{ error }}</p><p *ngIf="loading">Đang tải...</p>
+<section class="card request-state" *ngIf="loading">
+  <div class="spinner" aria-hidden="true"></div>
+  <div>
+    <strong>Đang tải dữ liệu...</strong>
+    <p>Backend Render có thể cần thời gian khởi động. Request sẽ tự dừng sau 120 giây.</p>
+  </div>
+  <button class="button ghost" type="button" (click)="refresh()">Hủy request cũ và tải lại</button>
+</section>
+<section class="card request-state error-state" *ngIf="!loading && error">
+  <div><strong>Không tải được dữ liệu</strong><p>{{ error }}</p></div>
+  <button class="button primary" type="button" (click)="refresh()">Tải lại dữ liệu</button>
+</section>
 <div class="question-grid" *ngIf="!loading">
   <article class="card question-card" *ngFor="let q of questions">
     <div class="meta"><span>{{ q.questionType }}</span><span>{{ q.source || 'MANUAL' }}</span><span *ngIf="q.examName">{{ q.examName }}</span><span class="review-state" [class.reviewed]="q.explanationReviewStatus === 'REVIEWED'">{{ q.explanationReviewStatus === 'REVIEWED' ? 'Đã duyệt' : 'Chờ duyệt' }}</span></div>
