@@ -1,13 +1,22 @@
-<header class="topbar">
-  <a class="brand" routerLink="/practice">PMP Playground</a>
-  <nav>
-    <a routerLink="/practice" routerLinkActive="active">Luyện tập</a>
-    <a routerLink="/questions" routerLinkActive="active">Câu hỏi</a>
-    <a routerLink="/categories" routerLinkActive="active">Categories</a>
-    <a routerLink="/import" routerLinkActive="active">Upload PMA</a>
-    <button type="button" class="topbar-refresh" (click)="refresh()" title="Tải lại ứng dụng">↻ Làm mới</button>
-  </nav>
-</header>
-<main class="container"><router-outlet /></main>
-
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/practice"><span class="brand-mark">◆</span><span>PMP Playground</span></a>
+    <nav class="side-nav">
+      <a routerLink="/practice" routerLinkActive="active"><span>⌂</span>Luyện tập</a>
+      <a routerLink="/questions" routerLinkActive="active"><span>◉</span>Ngân hàng câu hỏi</a>
+      <a routerLink="/categories" routerLinkActive="active"><span>□</span>Categories</a>
+      <a routerLink="/import" routerLinkActive="active"><span>⇩</span>Upload PMA</a>
+      <button type="button" (click)="refresh()"><span>↻</span>Làm mới</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="study-card"><strong>Ôn tập thông minh</strong><p>Luyện lại câu sai và theo dõi độ chính xác theo lịch sử.</p></div>
+  </aside>
+  <section class="workspace">
+    <header class="workspace-header">
+      <div class="search-shell">⌕ <span>Tìm kiếm câu hỏi, chủ đề, keyword...</span></div>
+      <div class="profile"><span class="bell">♢</span><span class="avatar">PM</span><div><strong>PMP Member</strong><small>Practice mode</small></div></div>
+    </header>
+    <main class="container"><router-outlet /></main>
+  </section>
+</div>
 <app-error-modal />

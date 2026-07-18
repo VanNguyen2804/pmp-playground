@@ -52,6 +52,20 @@ public class QuestionController {
                 .body(export.content());
     }
 
+    @GetMapping("/practice/dashboard")
+    public PracticeDashboardResponse practiceDashboard() {
+        return answerHistoryService.dashboard();
+    }
+
+    @GetMapping("/review/wrong")
+    public WrongQuestionReviewResponse wrongQuestionReview(
+            @RequestParam(required = false) String categoryCode,
+            @RequestParam(defaultValue = "1") int minIncorrect,
+            @RequestParam(defaultValue = "50") int count,
+            @RequestParam(defaultValue = "true") boolean shuffle) {
+        return answerHistoryService.wrongQuestions(categoryCode, minIncorrect, count, shuffle);
+    }
+
     @PostMapping("/{id}/attempts")
     @ResponseStatus(HttpStatus.CREATED)
     public AnswerAttemptResponse submitAttempt(@PathVariable Long id,

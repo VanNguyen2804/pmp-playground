@@ -71,6 +71,61 @@ public class QuestionAnswerHistoryService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public PracticeDashboardResponse dashboard() {
+        List<QuestionAnswerAttempt> all = attemptRepository.findAllByOrderByAnsweredAtDescIdDesc();
+        Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
+        for (QuestionAnswerAttempt attempt : all) {
+            latestByQuestion.putIfAbsent(attempt.getQuestion().getId(), attempt);
+        }
+        long wrongQuestions = latestByQuestion.values().stream().filter(attempt -> !attempt.isCorrect()).count();
+
+        java.time.Instant weekStart = java.time.Instant.now().minus(java.time.Duration.ofDays(7));
+        List<QuestionAnswerAttempt> weekly = attemptRepository
+                .findByAnsweredAtGreaterThanEqualOrderByAnsweredAtDescIdDesc(weekStart);
+        long weeklyCorrect = weekly.stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        double weeklyAccuracy = weekly.isEmpty() ? 0.0
+                : Math.round((weeklyCorrect * 10_000.0) / weekly.size()) / 100.0;
+
+        long streak = 0;
+        for (QuestionAnswerAttempt attempt : all) {
+            if (!attempt.isCorrect()) break;
+            streak++;
+        }
+        return new PracticeDashboardResponse(
+                wrongQuestions, weeklyAccuracy, weeklyCorrect, weekly.size(), streak, wrongQuestions);
+    }
+
+    @Transactional(readOnly = true)
+    public WrongQuestionReviewResponse wrongQuestions(String categoryCode, int minIncorrect, int count, boolean shuffle) {
+        List<QuestionAnswerAttempt> all = attemptRepository.findAllByOrderByAnsweredAtDescIdDesc();
+        Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
+        Map<Long, Long> incorrectCounts = new HashMap<>();
+        for (QuestionAnswerAttempt attempt : all) {
+            Long questionId = attempt.getQuestion().getId();
+            latestByQuestion.putIfAbsent(questionId, attempt);
+            if (!attempt.isCorrect()) incorrectCounts.merge(questionId, 1L, Long::sum);
+        }
+
+        List<Long> ids = latestByQuestion.entrySet().stream()
+                .filter(entry -> !entry.getValue().isCorrect())
+                .filter(entry -> incorrectCounts.getOrDefault(entry.getKey(), 0L) >= Math.max(1, minIncorrect))
+                .map(Map.Entry::getKey)
+                .toList();
+
+        List<Question> questions = new ArrayList<>(questionRepository.findAllById(ids));
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            String normalized = categoryCode.trim();
+            questions.removeIf(question -> question.getCategories().stream()
+                    .noneMatch(category -> category.getCode().equalsIgnoreCase(normalized)));
+        }
+        long total = questions.size();
+        if (shuffle) Collections.shuffle(questions);
+        int limit = Math.min(Math.max(count, 1), 100);
+        List<QuestionResponse> result = questions.stream().limit(limit).map(QuestionResponse::from).toList();
+        return new WrongQuestionReviewResponse(total, result);
+    }
+
     private SubmittedAnswer normalizeAndValidate(Question question, AnswerAttemptRequest request) {
         if (request == null) throw new IllegalArgumentException("Answer request is required.");
 

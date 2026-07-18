@@ -1,87 +1,97 @@
-<section class="page-header">
-  <div><h1>Luyện tập PMP</h1><p>MCQ, MRQ và Matching từ dữ liệu PMA.</p></div>
-  <div class="practice-filter">
-    <select [ngModel]="categoryCode()" (ngModelChange)="categoryCode.set($event)">
-      <option value="">Mọi category</option>
-      <option *ngFor="let c of categories(); trackBy: trackCategory" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
-    </select>
-    <button class="button ghost" (click)="start()">Tạo bộ mới</button>
+<section class="dashboard-grid">
+  <article class="metric-card danger"><div class="metric-icon">×</div><div><span>Câu sai cần ôn lại</span><strong>{{ dashboard().wrongQuestions }}</strong></div></article>
+  <article class="metric-card success"><div class="metric-icon">↗</div><div><span>Độ chính xác tuần này</span><strong>{{ dashboard().weeklyAccuracyPercentage | number:'1.0-1' }}%</strong><small>{{ dashboard().weeklyCorrectAttempts }}/{{ dashboard().weeklyTotalAttempts }} lượt</small></div></article>
+  <article class="metric-card warning"><div class="metric-icon">♨</div><div><span>Chuỗi đúng liên tiếp</span><strong>{{ dashboard().currentCorrectStreak }}</strong><small>câu</small></div></article>
+  <article class="metric-card info"><div class="metric-icon">▣</div><div><span>Hôm nay cần ôn</span><strong>{{ dashboard().dueToday }}</strong><small>câu</small></div></article>
+</section>
+
+<section class="practice-heading">
+  <div><h1>Luyện tập lại câu hỏi sai</h1><p>Ôn lại những câu đã trả lời sai để củng cố kiến thức và cải thiện điểm số.</p></div>
+</section>
+
+<section class="filter-bar">
+  <label class="switch-label">Chỉ câu sai <input type="checkbox" [ngModel]="wrongOnly()" (ngModelChange)="wrongOnly.set($event)"><span class="switch"></span></label>
+  <select [ngModel]="minIncorrect()" (ngModelChange)="minIncorrect.set(+$event)">
+    <option [value]="1">Chưa ôn lại</option>
+    <option [value]="2">Sai từ 2 lần trở lên</option>
+    <option [value]="3">Sai từ 3 lần trở lên</option>
+  </select>
+  <select [ngModel]="categoryCode()" (ngModelChange)="categoryCode.set($event)">
+    <option value="">Theo category</option>
+    <option *ngFor="let category of categories(); trackBy: trackCategory" [value]="category.code">{{ category.name }}</option>
+  </select>
+  <label class="check-label"><input type="checkbox" [ngModel]="shuffle()" (ngModelChange)="shuffle.set($event)"> Trộn ngẫu nhiên</label>
+  <button class="btn primary" (click)="start()">▶ Bắt đầu làm lại</button>
+</section>
+
+<section class="state-card" *ngIf="loading()">Đang tải câu hỏi...</section>
+<section class="state-card error" *ngIf="!loading() && error()">{{ error() }} <button class="btn primary" (click)="start()">Thử lại</button></section>
+<section class="state-card" *ngIf="finished()"><h2>Hoàn thành: {{ score() }}/{{ questions().length }}</h2><button class="btn primary" (click)="start()">Làm bộ khác</button></section>
+
+<section class="practice-layout" *ngIf="!loading() && !finished() && current() as q">
+  <div class="left-column">
+    <article class="question-card">
+      <div class="question-meta">
+        <span>Câu {{ index() + 1 }} / {{ questions().length }}</span>
+        <span class="category-chip">{{ q.categories?.[0]?.name || 'PMP' }}</span>
+        <span class="wrong-chip" *ngIf="historySummary()?.incorrectAttempts">Sai {{ historySummary()?.incorrectAttempts }} lần</span>
+      </div>
+      <h2>{{ q.questionText }}</h2>
+      <img *ngIf="q.imageUrl" class="question-image" [src]="q.imageUrl" alt="Question illustration">
+
+      <ng-container *ngIf="q.questionType !== 'MATCHING'">
+        <button class="option" *ngFor="let option of q.options"
+          [class.selected]="selected()[option.key]"
+          [class.correct]="revealed() && option.correct"
+          [class.wrong]="revealed() && selected()[option.key] && !option.correct"
+          (click)="toggle(option.key)">
+          <span class="radio">{{ option.key }}</span><span>{{ option.text }}</span>
+        </button>
+      </ng-container>
+
+      <div class="matching-grid" *ngIf="q.questionType === 'MATCHING'">
+        <label *ngFor="let pair of q.matchingPairs"><span>{{ pair.left }}</span><select [ngModel]="matching()[pair.left] || ''" (ngModelChange)="setMatching(pair.left, $event)"><option value="">Chọn đáp án</option><option *ngFor="let choice of matchingChoices()" [value]="choice">{{ choice }}</option></select></label>
+      </div>
+
+      <div class="answer-error" *ngIf="answerError()">{{ answerError() }}</div>
+      <div class="result-strip" *ngIf="revealed()" [class.ok]="attempt()?.correct">
+        <strong>{{ attempt()?.correct ? '✓ Chính xác' : '× Chưa chính xác' }}</strong>
+        <span>Đáp án đúng: {{ attempt()?.correctAnswers?.join(', ') }}</span>
+      </div>
+
+      <footer class="question-actions">
+        <div><button class="btn primary" *ngIf="!revealed()" [disabled]="!canCheck()" (click)="check()">✓ {{ submittingAnswer() ? 'Đang lưu...' : 'Kiểm tra' }}</button><button class="btn ghost" *ngIf="!revealed()" (click)="skip()">▷ Bỏ qua</button></div>
+        <button class="btn outline" *ngIf="revealed()" (click)="next()">{{ index() + 1 === questions().length ? 'Xem kết quả' : 'Câu tiếp theo →' }}</button>
+      </footer>
+    </article>
+
+    <article class="history-card">
+      <div class="section-title"><h3>Lịch sử trả lời câu này</h3><span *ngIf="historySummary() as s">{{ s.totalAttempts }} lần làm · <b>{{ s.correctAttempts }} đúng</b> · <b class="red">{{ s.incorrectAttempts }} sai</b></span></div>
+      <div class="history-empty" *ngIf="!historyLoading() && history().length === 0">Chưa có lịch sử trả lời.</div>
+      <table *ngIf="history().length"><thead><tr><th>Lần</th><th>Thời gian</th><th>Đáp án bạn chọn</th><th>Kết quả</th></tr></thead><tbody><tr *ngFor="let item of history(); let i = index"><td>#{{ historySummary()!.totalAttempts - i }}</td><td>{{ item.answeredAt | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ item.selectedAnswers.join(', ') || 'Matching' }}</td><td><span [class.good]="item.correct" [class.bad]="!item.correct">{{ item.correct ? '✓ Đúng' : '× Sai' }}</span></td></tr></tbody></table>
+    </article>
   </div>
-</section>
 
-<section class="card request-state" *ngIf="loading()">
-  <span>Đang tải bộ câu hỏi...</span>
-  <button class="button ghost" type="button" (click)="start()">Hủy request cũ và tải lại</button>
-</section>
-
-<section class="card request-state error-state" *ngIf="!loading() && error()">
-  <span>{{ error() }}</span>
-  <button class="button primary" type="button" (click)="start()">Tạo lại bộ câu hỏi</button>
-</section>
-
-<section class="card result" *ngIf="finished()">
-  <h2>Kết quả: {{ score() }} / {{ questions().length }}</h2>
-  <button class="button primary" (click)="start()">Làm lại</button>
-</section>
-
-<section class="card quiz" *ngIf="!loading() && !finished() && current() as q">
-  <div class="progress">Câu {{ index() + 1 }} / {{ questions().length }} · {{ q.questionType }} · Điểm {{ score() }}</div>
-  <h2>{{ q.questionText }}</h2>
-  <img class="question-image" *ngIf="q.imageUrl" [src]="q.imageUrl" alt="Question illustration">
-
-  <ng-container *ngIf="q.questionType !== 'MATCHING'">
-    <button
-      class="option"
-      *ngFor="let option of q.options"
-      [class.selected]="selected()[option.key]"
-      [class.correct]="revealed() && option.correct"
-      [class.wrong]="revealed() && selected()[option.key] && !option.correct"
-      [disabled]="submittingAnswer()"
-      (click)="toggle(option.key)">
-      <strong>{{ option.key }}.</strong> {{ option.text }}
-    </button>
-  </ng-container>
-
-  <div class="matching-grid" *ngIf="q.questionType === 'MATCHING'">
-    <label *ngFor="let pair of q.matchingPairs">
-      <span>{{ pair.left }}</span>
-      <select
-        [ngModel]="matching()[pair.left] || ''"
-        (ngModelChange)="setMatching(pair.left, $event)"
-        [disabled]="revealed() || submittingAnswer()">
-        <option value="">Chọn đáp án</option>
-        <option *ngFor="let choice of matchingChoices()" [value]="choice">{{ choice }}</option>
-      </select>
-      <small *ngIf="revealed()">Đúng: {{ pair.right }}</small>
-    </label>
-  </div>
-
-  <div class="answer-error" *ngIf="answerError()">{{ answerError() }}</div>
-
-  <div class="feedback" *ngIf="revealed()">
-    <p><strong>{{ isCorrect() ? 'Chính xác' : 'Chưa chính xác' }}</strong></p>
-    <p *ngIf="q.questionType !== 'MATCHING'">Đáp án đúng: {{ attempt()?.correctAnswers?.join(', ') || q.correctAnswers.join(', ') }}</p>
-    <div class="attempt-summary" *ngIf="attempt()?.summary as history">
-      <strong>Lịch sử câu này:</strong>
-      {{ history.correctAttempts }} đúng / {{ history.totalAttempts }} lần
-      · Độ chính xác {{ history.accuracyPercentage }}%
+  <aside class="explanation-card">
+    <h3>Giải thích</h3>
+    <div class="tabs"><button [class.active]="explanationTab()==='PMA'" (click)="explanationTab.set('PMA')">PMA</button><button [class.active]="explanationTab()==='AI'" (click)="explanationTab.set('AI')">AI</button><button [class.active]="explanationTab()==='FINAL'" (click)="explanationTab.set('FINAL')">Cuối cùng</button></div>
+    <div class="explanation-body" *ngIf="!editingExplanation()">
+      <p *ngIf="currentExplanation(); else noExplanation">{{ currentExplanation() }}</p>
+      <ng-template #noExplanation><p class="muted">Chưa có lời giải cho nguồn này.</p></ng-template>
+      <div class="correct-answer">Đáp án đúng: <b>{{ q.correctAnswers.join(', ') }}</b></div>
+      <button class="btn outline edit-button" (click)="beginEdit()">✎ Chỉnh sửa giải thích</button>
     </div>
-    <p class="explanation-label"><strong>{{ explanationLabel(q) }}</strong></p>
-    <p class="explanation-text" *ngIf="explanationText(q) as explanation">{{ explanation }}</p>
-    <p class="muted" *ngIf="!explanationText(q)">Chưa có lời giải chi tiết cho câu này.</p>
-    <p *ngIf="q.reference"><strong>Tham chiếu:</strong> {{ q.reference }}</p>
-  </div>
 
-  <div class="actions">
-    <button class="button primary" *ngIf="!revealed()" [disabled]="!canCheck()" (click)="check()">
-      {{ submittingAnswer() ? 'Đang lưu kết quả...' : 'Kiểm tra' }}
-    </button>
-    <button class="button primary" *ngIf="revealed()" (click)="next()">
-      {{ index() + 1 === questions().length ? 'Xem kết quả' : 'Câu tiếp theo' }}
-    </button>
-  </div>
+    <div class="editor" *ngIf="editingExplanation()">
+      <h4>Cập nhật lời giải thích</h4>
+      <textarea rows="12" [ngModel]="explanationDraft()" (ngModelChange)="explanationDraft.set($event)"></textarea>
+      <label>Ghi chú review<textarea rows="3" [ngModel]="explanationNotes()" (ngModelChange)="explanationNotes.set($event)"></textarea></label>
+      <div class="editor-meta">Nguồn: <b>Manual</b> · Trạng thái: <b>Reviewed</b></div>
+      <div class="editor-actions"><button class="btn ghost" (click)="cancelEdit()">Hủy</button><button class="btn outline" [disabled]="savingExplanation()" (click)="saveExplanation(false)">Lưu</button><button class="btn primary" [disabled]="savingExplanation()" (click)="saveExplanation(true)">Lưu & đặt làm giải thích cuối cùng</button></div>
+    </div>
+    <div class="tip">💡 Bạn có thể tự cập nhật phần giải thích và dùng lại cho lần ôn sau.</div>
+    <div class="save-message" *ngIf="saveMessage()">{{ saveMessage() }}</div>
+  </aside>
 </section>
 
-<section class="card empty" *ngIf="!loading() && questions().length === 0">
-  Chưa có dữ liệu. Hãy upload <code>exam1.json</code> trước.
-</section>
+<section class="state-card" *ngIf="!loading() && !finished() && questions().length === 0">Không có câu sai phù hợp với bộ lọc. Tắt “Chỉ câu sai” để luyện câu ngẫu nhiên.</section>

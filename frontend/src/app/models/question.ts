@@ -132,3 +132,17 @@ export interface AnswerAttemptResponse {
   answeredAt: string;
   summary: AnswerHistorySummary;
 }
+
+export interface PracticeDashboard {
+  wrongQuestions: number;
+  weeklyAccuracyPercentage: number;
+  weeklyCorrectAttempts: number;
+  weeklyTotalAttempts: number;
+  currentCorrectStreak: number;
+  dueToday: number;
+}
+
+export interface WrongQuestionReviewResponse {
+  totalQuestions: number;
+  questions: Question[];
+}

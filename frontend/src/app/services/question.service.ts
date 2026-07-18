@@ -2,7 +2,7 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy } from '../models/question';
+import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeDashboard, WrongQuestionReviewResponse } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -78,6 +78,19 @@ export class QuestionService {
     return this.http.get<Question[]>(`${this.questionsUrl}/random`, { params });
   }
 
+
+  practiceDashboard(): Observable<PracticeDashboard> {
+    return this.http.get<PracticeDashboard>(`${this.questionsUrl}/practice/dashboard`);
+  }
+
+  wrongQuestions(filters: { categoryCode?: string; minIncorrect?: number; count?: number; shuffle?: boolean }): Observable<WrongQuestionReviewResponse> {
+    let params = new HttpParams()
+      .set('minIncorrect', String(filters.minIncorrect ?? 1))
+      .set('count', String(filters.count ?? 50))
+      .set('shuffle', String(filters.shuffle ?? true));
+    if (filters.categoryCode?.trim()) params = params.set('categoryCode', filters.categoryCode.trim());
+    return this.http.get<WrongQuestionReviewResponse>(`${this.questionsUrl}/review/wrong`, { params });
+  }
 
   submitAttempt(questionId: number, request: AnswerAttemptRequest): Observable<AnswerAttemptResponse> {
     return this.http.post<AnswerAttemptResponse>(`${this.questionsUrl}/${questionId}/attempts`, request);
