@@ -1,36 +1,10 @@
-<section class="page-header">
-  <div>
-    <h1>Upload câu hỏi</h1>
-    <p>Hỗ trợ CSV và JSON. Dữ liệu sẽ được lưu vào H2 file database.</p>
-  </div>
-</section>
-
+<section class="page-header"><div><h1>Upload câu hỏi PMA</h1><p>Backend tự nhận diện cấu trúc <code>exam_attempt.exam_content.questions</code>, MCQ, MRQ và Matching.</p></div></section>
 <section class="card upload-box">
-  <input type="file" accept=".csv,.json,text/csv,application/json" (change)="choose($event)">
-  <button class="button primary" [disabled]="!selected || uploading" (click)="upload()">
-    {{ uploading ? 'Đang upload...' : 'Upload' }}
-  </button>
-  <p *ngIf="selected"><strong>File:</strong> {{ selected.name }}</p>
-  <p class="error" *ngIf="error">{{ error }}</p>
+  <h2>Chọn file</h2><input type="file" accept=".json,.csv,application/json,text/csv" (change)="choose($event)">
+  <p *ngIf="selected"><strong>{{ selected.name }}</strong> · {{ selected.size | number }} bytes</p>
+  <button class="button primary" [disabled]="!selected || uploading" (click)="upload()">{{ uploading ? 'Đang import...' : 'Upload và lưu database' }}</button>
+  <p class="muted">JSON PMA hiện tại có correct answers và metadata explanation, nhưng có thể không chứa nội dung lời giải. Khi thiếu, hệ thống lưu trạng thái <code>NOT_PROVIDED</code> để bổ sung sau.</p>
 </section>
-
-<section class="card" *ngIf="result">
-  <h2>Kết quả import</h2>
-  <div class="stats">
-    <div><strong>{{ result.totalRows }}</strong><span>Tổng dòng</span></div>
-    <div><strong>{{ result.importedRows }}</strong><span>Đã nhập</span></div>
-    <div><strong>{{ result.skippedRows }}</strong><span>Bỏ qua</span></div>
-  </div>
-  <details *ngIf="result.errors.length">
-    <summary>{{ result.errors.length }} lỗi</summary>
-    <ul><li *ngFor="let error of result.errors">{{ error }}</li></ul>
-  </details>
-</section>
-
-<section class="card guide">
-  <h2>CSV headers</h2>
-  <code>questionText,optionA,optionB,optionC,optionD,correctOption,explanation,category,difficulty,source,reference,tags</code>
-  <p><strong>correctOption:</strong> A, B, C hoặc D.</p>
-  <p><strong>difficulty:</strong> EASY, MEDIUM hoặc HARD.</p>
-  <p>Đặt nội dung có dấu phẩy hoặc xuống dòng trong dấu ngoặc kép.</p>
-</section>
+<p class="error" *ngIf="error">{{ error }}</p>
+<section class="card" *ngIf="result"><h2>Kết quả import</h2><div class="stats"><span>Tổng: <strong>{{ result.totalRows }}</strong></span><span>Mới: <strong>{{ result.importedRows }}</strong></span><span>Cập nhật: <strong>{{ result.updatedRows }}</strong></span><span>Bỏ qua: <strong>{{ result.skippedRows }}</strong></span></div><ul *ngIf="result.errors.length"><li *ngFor="let e of result.errors">{{ e }}</li></ul></section>
+<section class="card"><h2>Schema được hỗ trợ</h2><ul><li><strong>MCQ:</strong> một đáp án đúng.</li><li><strong>MRQ:</strong> nhiều đáp án đúng.</li><li><strong>Matching:</strong> lưu các cặp label/content.</li><li><strong>Categories:</strong> tự phân loại theo PMBOK 8 domains và PMA Handout topics; có thể chỉnh lại thủ công.</li></ul></section>

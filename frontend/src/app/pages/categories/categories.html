@@ -1,0 +1,30 @@
+<section class="page-header">
+  <div>
+    <h1>Categories học PMP</h1>
+    <p>Mỗi câu hỏi có thể thuộc đồng thời một PMBOK 8 Performance Domain và một hoặc nhiều topic trong PMA Handout.</p>
+  </div>
+</section>
+<p class="error" *ngIf="error">{{ error }}</p>
+<p *ngIf="loading">Đang tải...</p>
+
+<section *ngIf="!loading">
+  <h2>PMBOK 8 Performance Domains</h2>
+  <div class="category-grid">
+    <a class="card category-card" *ngFor="let c of pmbokCategories" [routerLink]="['/questions']" [queryParams]="{categoryCode: c.code}">
+      <span class="count">{{ c.questionCount }}</span>
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.description }}</p>
+      <code>{{ c.code }}</code>
+    </a>
+  </div>
+
+  <h2 class="section-title">PMA Handout Topics</h2>
+  <div class="category-grid">
+    <a class="card category-card" *ngFor="let c of pmaCategories" [routerLink]="['/questions']" [queryParams]="{categoryCode: c.code}">
+      <span class="count">{{ c.questionCount }}</span>
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.description }}</p>
+      <code>{{ c.code }}</code>
+    </a>
+  </div>
+</section>

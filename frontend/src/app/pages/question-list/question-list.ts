@@ -1,8 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { Difficulty, Question } from '../../models/question';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  CategorySummary,
+  Difficulty,
+  ExplanationReviewStatus,
+  Question,
+  QuestionType,
+  Taxonomy
+} from '../../models/question';
 import { QuestionService } from '../../services/question.service';
 
 @Component({
@@ -14,31 +21,33 @@ import { QuestionService } from '../../services/question.service';
 })
 export class QuestionList implements OnInit {
   questions: Question[] = [];
+  categories: CategorySummary[] = [];
   search = '';
-  category = '';
+  categoryCode = '';
+  taxonomy: Taxonomy | '' = '';
   difficulty: Difficulty | '' = '';
+  questionType: QuestionType | '' = '';
+  reviewStatus: ExplanationReviewStatus | '' = '';
   page = 0;
   totalPages = 0;
   totalElements = 0;
   loading = false;
   error = '';
 
-  constructor(private readonly service: QuestionService) {}
+  constructor(private readonly service: QuestionService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    this.categoryCode = this.route.snapshot.queryParamMap.get('categoryCode') ?? '';
+    this.service.categories().subscribe({ next: c => this.categories = c });
     this.load();
   }
 
   load(page = 0): void {
     this.loading = true;
     this.error = '';
-    this.service.list({
-      search: this.search,
-      category: this.category,
-      difficulty: this.difficulty,
-      page,
-      size: 20
-    }).subscribe({
+    this.service.list({ search: this.search, categoryCode: this.categoryCode, taxonomy: this.taxonomy,
+      difficulty: this.difficulty, questionType: this.questionType, reviewStatus: this.reviewStatus,
+      page, size: 20 }).subscribe({
       next: result => {
         this.questions = result.content;
         this.page = result.number;
@@ -46,25 +55,18 @@ export class QuestionList implements OnInit {
         this.totalElements = result.totalElements;
         this.loading = false;
       },
-      error: err => {
-        this.error = err?.error?.message ?? 'Không thể tải danh sách câu hỏi.';
-        this.loading = false;
-      }
+      error: err => { this.error = err?.error?.message ?? 'Không thể tải danh sách câu hỏi.'; this.loading = false; }
     });
   }
 
   clearFilters(): void {
-    this.search = '';
-    this.category = '';
-    this.difficulty = '';
-    this.load(0);
+    this.search = ''; this.categoryCode = ''; this.taxonomy = ''; this.difficulty = '';
+    this.questionType = ''; this.reviewStatus = ''; this.load(0);
   }
 
   remove(question: Question): void {
     if (!question.id || !confirm('Xóa câu hỏi này?')) return;
-    this.service.delete(question.id).subscribe({
-      next: () => this.load(this.page),
-      error: err => this.error = err?.error?.message ?? 'Không thể xóa câu hỏi.'
-    });
+    this.service.delete(question.id).subscribe({ next: () => this.load(this.page),
+      error: err => this.error = err?.error?.message ?? 'Không thể xóa câu hỏi.' });
   }
 }

@@ -1,56 +1,51 @@
 <section class="page-header">
-  <div>
-    <h1>Ngân hàng câu hỏi PMP</h1>
-    <p>{{ totalElements }} câu hỏi đã lưu.</p>
-  </div>
+  <div><h1>Ngân hàng câu hỏi PMP</h1><p>{{ totalElements }} câu hỏi đã lưu. So sánh PMA và ChatGPT trước khi chốt lời giải cuối.</p></div>
   <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
 </section>
 
 <section class="card filters">
-  <input [(ngModel)]="search" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, giải thích hoặc tag">
-  <input [(ngModel)]="category" (keyup.enter)="load(0)" placeholder="Category, ví dụ: Risk">
-  <select [(ngModel)]="difficulty">
-    <option value="">Mọi độ khó</option>
-    <option value="EASY">Easy</option>
-    <option value="MEDIUM">Medium</option>
-    <option value="HARD">Hard</option>
+  <input [(ngModel)]="search" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, mọi lời giải hoặc tag">
+  <select [(ngModel)]="categoryCode">
+    <option value="">Mọi category</option>
+    <optgroup label="PMBOK 8">
+      <option *ngFor="let c of categories" [hidden]="c.taxonomy !== 'PMBOK8_DOMAIN'" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
+    </optgroup>
+    <optgroup label="PMA Handout">
+      <option *ngFor="let c of categories" [hidden]="c.taxonomy !== 'PMA_HANDOUT_TOPIC'" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
+    </optgroup>
   </select>
+  <select [(ngModel)]="questionType"><option value="">Mọi loại</option><option value="MCQ">MCQ</option><option value="MRQ">MRQ</option><option value="MATCHING">Matching</option></select>
+  <select [(ngModel)]="difficulty"><option value="">Mọi độ khó</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select>
+  <select [(ngModel)]="reviewStatus"><option value="">Mọi trạng thái</option><option value="PENDING">Chờ duyệt lời giải</option><option value="REVIEWED">Đã chốt lời giải</option></select>
   <button class="button primary" (click)="load(0)">Tìm</button>
   <button class="button ghost" (click)="clearFilters()">Xóa lọc</button>
 </section>
 
-<p class="error" *ngIf="error">{{ error }}</p>
-<p *ngIf="loading">Đang tải...</p>
-
+<p class="error" *ngIf="error">{{ error }}</p><p *ngIf="loading">Đang tải...</p>
 <div class="question-grid" *ngIf="!loading">
   <article class="card question-card" *ngFor="let q of questions">
-    <div class="meta">
-      <span>{{ q.category || 'Chưa phân loại' }}</span>
-      <span>{{ q.difficulty || 'N/A' }}</span>
-    </div>
+    <div class="meta"><span>{{ q.questionType }}</span><span>{{ q.source || 'MANUAL' }}</span><span *ngIf="q.examName">{{ q.examName }}</span><span class="review-state" [class.reviewed]="q.explanationReviewStatus === 'REVIEWED'">{{ q.explanationReviewStatus === 'REVIEWED' ? 'Đã duyệt' : 'Chờ duyệt' }}</span></div>
     <h2>{{ q.questionText }}</h2>
-    <ol type="A">
-      <li>{{ q.optionA }}</li>
-      <li>{{ q.optionB }}</li>
-      <li>{{ q.optionC }}</li>
-      <li>{{ q.optionD }}</li>
+    <img class="question-image" *ngIf="q.imageUrl" [src]="q.imageUrl" alt="Question illustration">
+    <ol type="A" *ngIf="q.questionType !== 'MATCHING'">
+      <li *ngFor="let option of q.options" [class.correct-option]="option.correct">{{ option.text }}</li>
     </ol>
-    <p><strong>Đáp án:</strong> {{ q.correctOption }}</p>
-    <p class="explanation" *ngIf="q.explanation">{{ q.explanation }}</p>
-    <p class="reference" *ngIf="q.reference"><strong>Tham chiếu:</strong> {{ q.reference }}</p>
-    <div class="actions">
-      <a class="button ghost" [routerLink]="['/questions', q.id, 'edit']">Sửa</a>
-      <button class="button danger" (click)="remove(q)">Xóa</button>
-    </div>
+    <table class="pairs" *ngIf="q.questionType === 'MATCHING'"><tr *ngFor="let pair of q.matchingPairs"><td>{{ pair.left }}</td><td>→</td><td>{{ pair.right }}</td></tr></table>
+    <p *ngIf="q.questionType !== 'MATCHING'"><strong>Đáp án:</strong> {{ q.correctAnswers.join(', ') }}</p>
+    <div class="chips"><span class="chip" *ngFor="let c of q.categories">{{ c.name }}</span></div>
+
+    <details class="explanation-review" [open]="q.explanationReviewStatus === 'PENDING'">
+      <summary>So sánh lời giải · Bản cuối: {{ q.finalExplanationSource || 'NONE' }}</summary>
+      <div class="explanation-columns">
+        <section><h3>PMA</h3><p *ngIf="q.pmaExplanation">{{ q.pmaExplanation }}</p><p class="muted" *ngIf="!q.pmaExplanation">Chưa có lời giải PMA.</p></section>
+        <section><h3>ChatGPT</h3><p *ngIf="q.aiExplanation">{{ q.aiExplanation }}</p><p class="muted" *ngIf="!q.aiExplanation">Chưa có lời giải AI.</p></section>
+        <section class="final"><h3>Lời giải cuối</h3><p *ngIf="q.finalExplanation">{{ q.finalExplanation }}</p><p class="muted" *ngIf="!q.finalExplanation">Chưa chọn lời giải cuối.</p></section>
+      </div>
+      <p class="review-notes" *ngIf="q.explanationReviewNotes"><strong>Ghi chú:</strong> {{ q.explanationReviewNotes }}</p>
+    </details>
+
+    <div class="actions"><a class="button ghost" [routerLink]="['/questions', q.id, 'explanations']">So sánh lời giải</a><a class="button ghost" *ngIf="q.questionType !== 'MATCHING'" [routerLink]="['/questions', q.id, 'edit']">Sửa câu hỏi</a><button class="button danger" (click)="remove(q)">Xóa</button></div>
   </article>
 </div>
-
-<div class="empty card" *ngIf="!loading && questions.length === 0">
-  Chưa có câu hỏi phù hợp. Hãy thêm thủ công hoặc upload CSV/JSON.
-</div>
-
-<nav class="pagination" *ngIf="totalPages > 1">
-  <button class="button ghost" [disabled]="page === 0" (click)="load(page - 1)">Trước</button>
-  <span>Trang {{ page + 1 }} / {{ totalPages }}</span>
-  <button class="button ghost" [disabled]="page + 1 >= totalPages" (click)="load(page + 1)">Sau</button>
-</nav>
+<div class="empty card" *ngIf="!loading && questions.length === 0">Chưa có câu hỏi phù hợp. Hãy upload file PMA JSON.</div>
+<nav class="pagination" *ngIf="totalPages > 1"><button class="button ghost" [disabled]="page === 0" (click)="load(page - 1)">Trước</button><span>Trang {{ page + 1 }} / {{ totalPages }}</span><button class="button ghost" [disabled]="page + 1 >= totalPages" (click)="load(page + 1)">Sau</button></nav>

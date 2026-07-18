@@ -1,6 +1,21 @@
 .form { display: grid; gap: 10px; }
 .form label { font-weight: 700; margin-top: 5px; }
-.options-grid, .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.options-grid > div, .fields-grid > div { display: grid; gap: 8px; }
+.options-grid, .fields-grid, .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.options-grid > div, .fields-grid > div, .review-grid > div { display: grid; gap: 8px; }
 .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
-@media (max-width: 760px) { .options-grid, .fields-grid { grid-template-columns: 1fr; } }
+.explanation-section { margin: 14px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; display: grid; gap: 16px; }
+.section-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.section-title h2 { margin-bottom: 4px; font-size: 1.15rem; }
+.section-title p { margin: 0; color: var(--muted); }
+.explanation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.explanation-panel { display: grid; align-content: start; gap: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: white; }
+.explanation-panel header { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.explanation-panel header span { font-size: .75rem; color: var(--muted); background: var(--soft); border-radius: 999px; padding: 4px 7px; }
+.pma-panel { border-top: 4px solid #7c3aed; }
+.ai-panel { border-top: 4px solid #2563eb; }
+.final-panel { border-top: 4px solid #16a34a; }
+.final-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.review-badge { display: inline-flex; border-radius: 999px; padding: 6px 10px; font-size: .8rem; font-weight: 700; color: #92400e; background: #fef3c7; }
+.review-badge.reviewed { color: #166534; background: #dcfce7; }
+@media (max-width: 1050px) { .explanation-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .options-grid, .fields-grid, .review-grid { grid-template-columns: 1fr; } .section-title { flex-direction: column; } }

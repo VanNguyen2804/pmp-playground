@@ -1,0 +1,47 @@
+<section class="page-header">
+  <div><h1>So sánh và chốt lời giải</h1><p>Giữ riêng lời giải PMA, phân tích ChatGPT và bản cuối dùng để học.</p></div>
+  <a class="button ghost" routerLink="/questions">Quay lại</a>
+</section>
+
+<p class="error" *ngIf="error">{{ error }}</p>
+<section class="card question-context" *ngIf="question as q">
+  <div class="meta"><span>{{ q.questionType }}</span><span>{{ q.examName || q.source }}</span></div>
+  <h2>{{ q.questionText }}</h2>
+  <ol type="A" *ngIf="q.questionType !== 'MATCHING'">
+    <li *ngFor="let option of q.options" [class.correct-option]="option.correct">{{ option.text }}</li>
+  </ol>
+  <table class="pairs" *ngIf="q.questionType === 'MATCHING'"><tr *ngFor="let pair of q.matchingPairs"><td>{{ pair.left }}</td><td>→</td><td>{{ pair.right }}</td></tr></table>
+  <p *ngIf="q.questionType !== 'MATCHING'"><strong>Đáp án đúng:</strong> {{ q.correctAnswers.join(', ') }}</p>
+</section>
+
+<form class="card review-form" [formGroup]="form" (ngSubmit)="save()" *ngIf="question">
+  <div class="review-heading">
+    <div><h2>Ba cột lời giải</h2><p>Chọn một nguồn, ghép hai nguồn hoặc tự biên tập bản cuối.</p></div>
+    <span class="status" [class.reviewed]="form.controls.explanationReviewStatus.value === 'REVIEWED'">{{ form.controls.explanationReviewStatus.value === 'REVIEWED' ? 'Đã duyệt' : 'Chờ duyệt' }}</span>
+  </div>
+
+  <div class="columns">
+    <article class="panel pma">
+      <header><strong>PMA explanation</strong><small>Nguồn PMA</small></header>
+      <textarea rows="16" formControlName="pmaExplanation" placeholder="Nhập hoặc dán lời giải PMA."></textarea>
+      <button type="button" class="button ghost" (click)="usePma()" [disabled]="!form.controls.pmaExplanation.value.trim()">Chọn PMA</button>
+    </article>
+    <article class="panel ai">
+      <header><strong>ChatGPT explanation</strong><small>Phân tích độc lập</small></header>
+      <textarea rows="16" formControlName="aiExplanation" placeholder="Dán lời giải ChatGPT vào đây."></textarea>
+      <button type="button" class="button ghost" (click)="useAi()" [disabled]="!form.controls.aiExplanation.value.trim()">Chọn ChatGPT</button>
+    </article>
+    <article class="panel final">
+      <header><strong>Final explanation</strong><small>Bản dùng để học</small></header>
+      <textarea rows="16" formControlName="finalExplanation" placeholder="Lời giải cuối cùng sau khi so sánh."></textarea>
+      <div class="inline-actions"><button type="button" class="button ghost" (click)="merge()">Ghép hai nguồn</button><button type="button" class="button danger" (click)="clearFinal()">Xóa bản cuối</button></div>
+    </article>
+  </div>
+
+  <div class="selectors">
+    <div><label>Nguồn bản cuối</label><select formControlName="finalExplanationSource"><option value="NONE">Chưa chọn</option><option value="PMA">PMA</option><option value="AI">ChatGPT</option><option value="MERGED">Kết hợp PMA + ChatGPT</option><option value="MANUAL">Biên tập thủ công</option></select></div>
+    <div><label>Trạng thái</label><select formControlName="explanationReviewStatus"><option value="PENDING">Chờ so sánh</option><option value="REVIEWED">Đã duyệt và chốt</option></select></div>
+  </div>
+  <label>Ghi chú so sánh</label><textarea rows="4" formControlName="explanationReviewNotes" placeholder="Ghi rõ điểm mạnh, điểm yếu và lý do chọn bản cuối."></textarea>
+  <div class="actions"><a class="button ghost" routerLink="/questions">Hủy</a><button class="button primary" type="submit" [disabled]="saving">{{ saving ? 'Đang lưu...' : 'Lưu lời giải' }}</button></div>
+</form>

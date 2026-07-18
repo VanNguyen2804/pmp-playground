@@ -2,63 +2,68 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { Difficulty, ImportResult, PageResponse, Question } from '../models/question';
+import { CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, Taxonomy } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
-  private readonly apiUrl: string;
+  private readonly apiBaseUrl: string;
+  private readonly questionsUrl: string;
 
   constructor(
     private readonly http: HttpClient,
     @Inject(APP_RUNTIME_CONFIG) config: AppRuntimeConfig
   ) {
-    this.apiUrl = `${config.apiBaseUrl.replace(/\/$/, '')}/questions`;
+    this.apiBaseUrl = config.apiBaseUrl.replace(/\/$/, '');
+    this.questionsUrl = `${this.apiBaseUrl}/questions`;
   }
 
   list(filters: {
     search?: string;
-    category?: string;
+    categoryCode?: string;
+    taxonomy?: Taxonomy | '';
     difficulty?: Difficulty | '';
+    questionType?: QuestionType | '';
+    reviewStatus?: ExplanationReviewStatus | '';
     page?: number;
     size?: number;
   }): Observable<PageResponse<Question>> {
     let params = new HttpParams()
       .set('page', String(filters.page ?? 0))
       .set('size', String(filters.size ?? 20));
-
     if (filters.search?.trim()) params = params.set('search', filters.search.trim());
-    if (filters.category?.trim()) params = params.set('category', filters.category.trim());
+    if (filters.categoryCode?.trim()) params = params.set('categoryCode', filters.categoryCode.trim());
+    if (filters.taxonomy) params = params.set('taxonomy', filters.taxonomy);
     if (filters.difficulty) params = params.set('difficulty', filters.difficulty);
-
-    return this.http.get<PageResponse<Question>>(this.apiUrl, { params });
+    if (filters.questionType) params = params.set('questionType', filters.questionType);
+    if (filters.reviewStatus) params = params.set('reviewStatus', filters.reviewStatus);
+    return this.http.get<PageResponse<Question>>(this.questionsUrl, { params });
   }
 
-  get(id: number): Observable<Question> {
-    return this.http.get<Question>(`${this.apiUrl}/${id}`);
+  categories(taxonomy?: Taxonomy): Observable<CategorySummary[]> {
+    let params = new HttpParams();
+    if (taxonomy) params = params.set('taxonomy', taxonomy);
+    return this.http.get<CategorySummary[]>(`${this.apiBaseUrl}/categories`, { params });
   }
 
-  create(question: Question): Observable<Question> {
-    return this.http.post<Question>(this.apiUrl, question);
+  get(id: number): Observable<Question> { return this.http.get<Question>(`${this.questionsUrl}/${id}`); }
+  create(question: Question): Observable<Question> { return this.http.post<Question>(this.questionsUrl, question); }
+  update(id: number, question: Question): Observable<Question> { return this.http.put<Question>(`${this.questionsUrl}/${id}`, question); }
+  updateExplanations(id: number, question: Pick<Question, 'pmaExplanation' | 'aiExplanation' | 'finalExplanation' | 'finalExplanationSource' | 'explanationReviewStatus' | 'explanationReviewNotes'>): Observable<Question> {
+    return this.http.put<Question>(`${this.questionsUrl}/${id}/explanations`, question);
   }
-
-  update(id: number, question: Question): Observable<Question> {
-    return this.http.put<Question>(`${this.apiUrl}/${id}`, question);
-  }
-
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
+  delete(id: number): Observable<void> { return this.http.delete<void>(`${this.questionsUrl}/${id}`); }
 
   importFile(file: File): Observable<ImportResult> {
     const form = new FormData();
     form.append('file', file);
     const type = file.name.toLowerCase().endsWith('.json') ? 'json' : 'csv';
-    return this.http.post<ImportResult>(`${this.apiUrl}/import/${type}`, form);
+    return this.http.post<ImportResult>(`${this.questionsUrl}/import/${type}`, form);
   }
 
-  random(count = 10, category?: string): Observable<Question[]> {
+  random(count = 10, categoryCode?: string, questionType?: QuestionType): Observable<Question[]> {
     let params = new HttpParams().set('count', String(count));
-    if (category?.trim()) params = params.set('category', category.trim());
-    return this.http.get<Question[]>(`${this.apiUrl}/random`, { params });
+    if (categoryCode?.trim()) params = params.set('categoryCode', categoryCode.trim());
+    if (questionType) params = params.set('questionType', questionType);
+    return this.http.get<Question[]>(`${this.questionsUrl}/random`, { params });
   }
 }

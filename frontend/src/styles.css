@@ -29,3 +29,4 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #bfdbfe; border-c
   .page-header { align-items: flex-start; flex-direction: column; }
   .topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
 }
+.muted{color:var(--muted,#667085)}.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0}.chip{background:#eef4ff;border-radius:999px;padding:.25rem .55rem;font-size:.78rem}.question-image{max-width:100%;max-height:420px;object-fit:contain;border:1px solid #e5e7eb;border-radius:.5rem}.correct-option{font-weight:600}.pairs{width:100%;border-collapse:collapse}.pairs td{border-bottom:1px solid #e5e7eb;padding:.5rem}.stats{display:flex;gap:1rem;flex-wrap:wrap}.answer-checks{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}.matching-grid{display:grid;gap:.8rem}.matching-grid label{display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,2fr);gap:.75rem;align-items:center}.matching-grid small{grid-column:2;color:#176b35}

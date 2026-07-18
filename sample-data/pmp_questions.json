@@ -1,16 +1,25 @@
 [
   {
-    "questionText": "Which document contains the strategy for team training?",
-    "optionA": "Risk register",
-    "optionB": "Resource management plan",
-    "optionC": "Issue log",
-    "optionD": "Project charter",
-    "correctOption": "B",
-    "explanation": "Training and team development strategies are documented in the resource management plan.",
-    "category": "Resource",
+    "questionType": "MCQ",
+    "questionText": "Which plan contains the team training strategy?",
+    "options": [
+      {"key": "A", "text": "Risk management plan"},
+      {"key": "B", "text": "Resource management plan"},
+      {"key": "C", "text": "Issue log"},
+      {"key": "D", "text": "Project charter"}
+    ],
+    "correctAnswers": ["B"],
+    "matchingPairs": [],
+    "pmaExplanation": "Training and team development approaches are documented in the resource management plan.",
+    "aiExplanation": "The Resource Management Plan defines how team members are acquired, developed, trained, managed, and released.",
+    "finalExplanation": "Training is planned and managed through the Resource Management Plan because it is part of team development.",
+    "finalExplanationSource": "MERGED",
+    "explanationReviewStatus": "REVIEWED",
+    "explanationReviewNotes": "PMA and AI agree; final text combines the clearest points.",
     "difficulty": "EASY",
-    "source": "PMP Practice",
-    "reference": "PMBOK 8 - Resource Management Plan",
-    "tags": "training,resource plan"
+    "source": "JSON",
+    "reference": "PMBOK 8 / PMA Resource topic",
+    "tags": "training,resource",
+    "categoryCodes": ["P8_RESOURCES", "PMA_RESOURCE_TEAM"]
   }
 ]
