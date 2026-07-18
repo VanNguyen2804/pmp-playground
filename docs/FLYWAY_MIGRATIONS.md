@@ -33,8 +33,8 @@ This restores Flyway's safety check against connecting to an unexpected non-empt
 Never edit a versioned migration that has already run in any environment. Add a new script to both vendor folders:
 
 ```text
-backend/src/main/resources/db/migration/postgresql/V5__add_example_column.sql
-backend/src/main/resources/db/migration/h2/V5__add_example_column.sql
+backend/src/main/resources/db/migration/postgresql/V7__add_example_column.sql
+backend/src/main/resources/db/migration/h2/V7__add_example_column.sql
 ```
 
 Example:
@@ -74,3 +74,8 @@ order by installed_rank;
 ## V5: legacy PostgreSQL text repair
 
 `V5__convert_legacy_binary_text_columns.sql` converts old `bytea` or `oid` columns created by historical LOB mappings into PostgreSQL `text`. This prevents `lower(bytea)` failures in question search. See `docs/FIX_LOWER_BYTEA.md`.
+
+
+## V6: practice answer history
+
+`V6__create_question_answer_history.sql` creates `question_answer_attempts`. One row is stored for every correct or incorrect practice submission.

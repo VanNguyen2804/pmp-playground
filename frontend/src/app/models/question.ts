@@ -102,3 +102,33 @@ export interface ReclassificationResult {
   totalQuestions: number;
   reclassifiedQuestions: number;
 }
+
+export interface AnswerAttemptRequest {
+  selectedAnswers: string[];
+  matchingAnswers: Record<string, string>;
+  sessionId?: string;
+}
+
+export interface AnswerHistorySummary {
+  questionId: number;
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  accuracyPercentage: number;
+  lastAnsweredAt?: string | null;
+  lastAnswerCorrect?: boolean | null;
+}
+
+export interface AnswerAttemptResponse {
+  id: number;
+  questionId: number;
+  questionType: QuestionType;
+  selectedAnswers: string[];
+  matchingAnswers: Record<string, string>;
+  correct: boolean;
+  correctAnswers: string[];
+  correctMatchingAnswers: Record<string, string>;
+  sessionId?: string | null;
+  answeredAt: string;
+  summary: AnswerHistorySummary;
+}

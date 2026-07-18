@@ -9,7 +9,11 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, take } from 'rxjs';
-import { CategorySummary, Question } from '../../models/question';
+import {
+  AnswerAttemptResponse,
+  CategorySummary,
+  Question
+} from '../../models/question';
 import { QuestionService } from '../../services/question.service';
 
 @Component({
@@ -33,11 +37,16 @@ export class Practice implements OnInit, OnDestroy {
   readonly selected = signal<Record<string, boolean>>({});
   readonly matching = signal<Record<string, string>>({});
   readonly matchingChoices = signal<string[]>([]);
+  readonly submittingAnswer = signal(false);
+  readonly answerError = signal('');
+  readonly attempt = signal<AnswerAttemptResponse | null>(null);
+  readonly sessionId = signal(this.createSessionId());
 
   readonly current = computed(() => this.questions()[this.index()]);
 
   private loadSubscription?: Subscription;
   private categoriesSubscription?: Subscription;
+  private answerSubscription?: Subscription;
   private requestVersion = 0;
 
   constructor(private readonly service: QuestionService) {}
@@ -53,13 +62,16 @@ export class Practice implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.loadSubscription?.unsubscribe();
     this.categoriesSubscription?.unsubscribe();
+    this.answerSubscription?.unsubscribe();
   }
 
   start(): void {
     this.loadSubscription?.unsubscribe();
+    this.answerSubscription?.unsubscribe();
     const version = ++this.requestVersion;
     this.loading.set(true);
     this.error.set('');
+    this.sessionId.set(this.createSessionId());
 
     this.loadSubscription = this.service.random(10, this.categoryCode()).pipe(take(1)).subscribe({
       next: questions => {
@@ -80,7 +92,7 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   toggle(key: string): void {
-    if (this.revealed()) return;
+    if (this.revealed() || this.submittingAnswer()) return;
 
     if (this.current()?.questionType === 'MCQ') {
       this.selected.set({ [key]: true });
@@ -91,17 +103,43 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   setMatching(left: string, right: string): void {
-    if (this.revealed()) return;
+    if (this.revealed() || this.submittingAnswer()) return;
     this.matching.update(value => ({ ...value, [left]: right }));
   }
 
   check(): void {
-    if (!this.current() || this.revealed() || !this.canCheck()) return;
-    this.revealed.set(true);
-    if (this.isCorrect()) this.score.update(value => value + 1);
+    const question = this.current();
+    if (!question || question.id == null || this.revealed() || this.submittingAnswer() || !this.canCheck()) {
+      if (question && question.id == null) {
+        this.answerError.set('Câu hỏi chưa có database ID nên không thể ghi lịch sử trả lời.');
+      }
+      return;
+    }
+
+    this.answerSubscription?.unsubscribe();
+    this.submittingAnswer.set(true);
+    this.answerError.set('');
+
+    this.answerSubscription = this.service.submitAttempt(question.id, {
+      selectedAnswers: this.selectedAnswerKeys(),
+      matchingAnswers: { ...this.matching() },
+      sessionId: this.sessionId()
+    }).pipe(take(1)).subscribe({
+      next: response => {
+        this.attempt.set(response);
+        this.revealed.set(true);
+        if (response.correct) this.score.update(value => value + 1);
+        this.submittingAnswer.set(false);
+      },
+      error: () => {
+        this.answerError.set('Không lưu được lần trả lời. Hãy thử nhấn “Kiểm tra” lại.');
+        this.submittingAnswer.set(false);
+      }
+    });
   }
 
   next(): void {
+    if (this.submittingAnswer()) return;
     if (this.index() + 1 >= this.questions().length) {
       this.finished.set(true);
       return;
@@ -112,7 +150,7 @@ export class Practice implements OnInit, OnDestroy {
 
   canCheck(): boolean {
     const current = this.current();
-    if (!current) return false;
+    if (!current || this.submittingAnswer()) return false;
     if (current.questionType === 'MATCHING') {
       const matching = this.matching();
       return current.matchingPairs.every(pair => !!matching[pair.left]);
@@ -121,6 +159,9 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   isCorrect(): boolean {
+    const serverResult = this.attempt();
+    if (serverResult) return serverResult.correct;
+
     const question = this.current();
     if (!question) return false;
 
@@ -129,8 +170,7 @@ export class Practice implements OnInit, OnDestroy {
       return question.matchingPairs.every(pair => matching[pair.left] === pair.right);
     }
 
-    const selected = this.selected();
-    const chosen = Object.keys(selected).filter(key => selected[key]).sort();
+    const chosen = this.selectedAnswerKeys().sort();
     return JSON.stringify(chosen) === JSON.stringify([...question.correctAnswers].sort());
   }
 
@@ -156,15 +196,31 @@ export class Practice implements OnInit, OnDestroy {
     return category.id ?? category.code;
   }
 
+  private selectedAnswerKeys(): string[] {
+    const selected = this.selected();
+    return Object.keys(selected).filter(key => selected[key]);
+  }
+
   private prepare(): void {
+    this.answerSubscription?.unsubscribe();
     this.selected.set({});
     this.matching.set({});
     this.revealed.set(false);
+    this.submittingAnswer.set(false);
+    this.answerError.set('');
+    this.attempt.set(null);
     const question = this.current();
     this.matchingChoices.set(
       question?.questionType === 'MATCHING'
         ? [...question.matchingPairs.map(pair => pair.right)].sort(() => Math.random() - 0.5)
         : []
     );
+  }
+
+  private createSessionId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `practice-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 }

@@ -2,6 +2,7 @@ package com.example.pmp.question;
 
 import com.example.pmp.category.Category;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -87,13 +88,16 @@ public class Question {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder asc")
+    @BatchSize(size = 100)
     private List<QuestionOption> options = new ArrayList<>();
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder asc")
+    @BatchSize(size = 100)
     private List<MatchingPair> matchingPairs = new ArrayList<>();
 
     @ManyToMany
+    @BatchSize(size = 100)
     @JoinTable(name = "question_categories",
             joinColumns = @JoinColumn(name = "question_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"),

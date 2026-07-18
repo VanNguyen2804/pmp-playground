@@ -1,5 +1,6 @@
 package com.example.pmp.config;
 
+import com.example.pmp.question.QuestionExportException;
 import com.example.pmp.question.QuestionImportException;
 import com.example.pmp.question.QuestionNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiErrorResponse> importError(QuestionImportException ex, HttpServletRequest request) {
         return response(HttpStatus.UNPROCESSABLE_ENTITY, "QUESTION_IMPORT_FAILED", ex.getMessage(), request,
                 Map.of(), ex.getDetails());
+    }
+
+    @ExceptionHandler(QuestionExportException.class)
+    public ResponseEntity<ApiErrorResponse> exportError(QuestionExportException ex, HttpServletRequest request) {
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, "QUESTION_EXPORT_FAILED", ex.getMessage(), request,
+                Map.of(), List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -105,7 +112,7 @@ public class ApiExceptionHandler {
                 : List.of("SQLState: " + sqlState);
 
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "DATABASE_QUERY_FAILED",
-                "Không thể đọc dữ liệu từ database. Vui lòng thử lại sau khi migration hoàn tất.",
+                "Không thể xử lý dữ liệu trong database. Vui lòng thử lại sau khi migration hoàn tất.",
                 request, Map.of(), details, traceId);
     }
 

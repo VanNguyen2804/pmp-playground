@@ -3,7 +3,12 @@ package com.example.pmp.question;
 import com.example.pmp.category.Taxonomy;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
@@ -12,8 +17,16 @@ import java.util.List;
 @RequestMapping("/api/questions")
 public class QuestionController {
     private final QuestionService service;
+    private final QuestionCsvExportService csvExportService;
+    private final QuestionAnswerHistoryService answerHistoryService;
 
-    public QuestionController(QuestionService service) { this.service = service; }
+    public QuestionController(QuestionService service,
+                              QuestionCsvExportService csvExportService,
+                              QuestionAnswerHistoryService answerHistoryService) {
+        this.service = service;
+        this.csvExportService = csvExportService;
+        this.answerHistoryService = answerHistoryService;
+    }
 
     @GetMapping
     public Page<QuestionResponse> list(
@@ -26,6 +39,37 @@ public class QuestionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return service.list(search, categoryCode, taxonomy, difficulty, questionType, reviewStatus, page, size);
+    }
+
+    @GetMapping(value = "/export/csv", produces = "text/csv")
+    public ResponseEntity<byte[]> exportCsv() {
+        QuestionCsvExport export = csvExportService.exportAll();
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .cacheControl(CacheControl.noStore())
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(export.filename()).build().toString())
+                .body(export.content());
+    }
+
+    @PostMapping("/{id}/attempts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AnswerAttemptResponse submitAttempt(@PathVariable Long id,
+                                               @Valid @RequestBody AnswerAttemptRequest request) {
+        return answerHistoryService.submit(id, request);
+    }
+
+    @GetMapping("/{id}/attempts")
+    public Page<AnswerAttemptResponse> answerHistory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return answerHistoryService.history(id, page, size);
+    }
+
+    @GetMapping("/{id}/attempts/summary")
+    public AnswerHistorySummary answerHistorySummary(@PathVariable Long id) {
+        return answerHistoryService.summary(id);
     }
 
     @GetMapping("/{id}")

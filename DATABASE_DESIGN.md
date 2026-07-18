@@ -77,3 +77,16 @@ Many-to-many relationship. A question can appear under both a PMBOK 8 domain and
 - The supplied `exam1.json` contains explanation metadata but does not contain explanation text. Those records are saved with `explanation_status=NOT_PROVIDED`.
 - Re-importing PMA data does not erase manually curated AI or final explanations.
 - The edit page presents PMA, AI, and final explanations side by side. The final explanation may be copied from either source, merged, or manually rewritten.
+
+## Question answer history
+
+`question_answer_attempts` stores one row for every submitted practice answer:
+
+- `question_id`: the question being answered.
+- `question_type`: MCQ, MRQ, or MATCHING snapshot.
+- `submitted_answer_json`: selected option keys or matching pairs.
+- `correct`: result evaluated by the backend.
+- `session_id`: groups attempts from the same practice set.
+- `answered_at`: attempt timestamp.
+
+The foreign key uses `ON DELETE CASCADE`, so deleting a question also removes its answer history.

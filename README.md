@@ -220,3 +220,11 @@ See [`docs/FRONTEND_BACKEND_CONNECTION.md`](docs/FRONTEND_BACKEND_CONNECTION.md)
 ## Database migrations
 
 The backend uses **Flyway** for H2 and PostgreSQL/Neon schema changes. See [`docs/FLYWAY_MIGRATIONS.md`](docs/FLYWAY_MIGRATIONS.md). Hibernate runs with `ddl-auto=validate`; add a new versioned SQL migration for every schema change.
+
+## CSV export
+
+Trang **Ngân hàng câu hỏi PMP** có nút **Xuất toàn bộ CSV**. Backend cung cấp `GET /api/questions/export/csv`, tạo một dòng cho mỗi câu hỏi với category và đáp án đúng hiện đang lưu. Xem `docs/CSV_EXPORT.md`.
+
+## Practice answer history
+
+The root page opens `/practice`. Each submitted answer is evaluated and saved by the backend in `question_answer_attempts`. See `docs/ANSWER_HISTORY.md` for the endpoints and Flyway migration.

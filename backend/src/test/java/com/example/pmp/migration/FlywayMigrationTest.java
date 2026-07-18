@@ -31,8 +31,13 @@ class FlywayMigrationTest {
                 "select count(*) from categories where taxonomy = 'PMP_TOPIC' and active = true",
                 Integer.class
         );
+        Integer historyTableCount = jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_name = 'QUESTION_ANSWER_ATTEMPTS'",
+                Integer.class
+        );
 
-        assertThat(migrationCount).isGreaterThanOrEqualTo(5);
+        assertThat(migrationCount).isGreaterThanOrEqualTo(6);
         assertThat(categoryCount).isEqualTo(14);
+        assertThat(historyTableCount).isEqualTo(1);
     }
 }

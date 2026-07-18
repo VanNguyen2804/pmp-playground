@@ -36,6 +36,7 @@
       [class.selected]="selected()[option.key]"
       [class.correct]="revealed() && option.correct"
       [class.wrong]="revealed() && selected()[option.key] && !option.correct"
+      [disabled]="submittingAnswer()"
       (click)="toggle(option.key)">
       <strong>{{ option.key }}.</strong> {{ option.text }}
     </button>
@@ -47,7 +48,7 @@
       <select
         [ngModel]="matching()[pair.left] || ''"
         (ngModelChange)="setMatching(pair.left, $event)"
-        [disabled]="revealed()">
+        [disabled]="revealed() || submittingAnswer()">
         <option value="">Chọn đáp án</option>
         <option *ngFor="let choice of matchingChoices()" [value]="choice">{{ choice }}</option>
       </select>
@@ -55,9 +56,16 @@
     </label>
   </div>
 
+  <div class="answer-error" *ngIf="answerError()">{{ answerError() }}</div>
+
   <div class="feedback" *ngIf="revealed()">
     <p><strong>{{ isCorrect() ? 'Chính xác' : 'Chưa chính xác' }}</strong></p>
-    <p *ngIf="q.questionType !== 'MATCHING'">Đáp án đúng: {{ q.correctAnswers.join(', ') }}</p>
+    <p *ngIf="q.questionType !== 'MATCHING'">Đáp án đúng: {{ attempt()?.correctAnswers?.join(', ') || q.correctAnswers.join(', ') }}</p>
+    <div class="attempt-summary" *ngIf="attempt()?.summary as history">
+      <strong>Lịch sử câu này:</strong>
+      {{ history.correctAttempts }} đúng / {{ history.totalAttempts }} lần
+      · Độ chính xác {{ history.accuracyPercentage }}%
+    </div>
     <p class="explanation-label"><strong>{{ explanationLabel(q) }}</strong></p>
     <p class="explanation-text" *ngIf="explanationText(q) as explanation">{{ explanation }}</p>
     <p class="muted" *ngIf="!explanationText(q)">Chưa có lời giải chi tiết cho câu này.</p>
@@ -65,7 +73,9 @@
   </div>
 
   <div class="actions">
-    <button class="button primary" *ngIf="!revealed()" [disabled]="!canCheck()" (click)="check()">Kiểm tra</button>
+    <button class="button primary" *ngIf="!revealed()" [disabled]="!canCheck()" (click)="check()">
+      {{ submittingAnswer() ? 'Đang lưu kết quả...' : 'Kiểm tra' }}
+    </button>
     <button class="button primary" *ngIf="revealed()" (click)="next()">
       {{ index() + 1 === questions().length ? 'Xem kết quả' : 'Câu tiếp theo' }}
     </button>

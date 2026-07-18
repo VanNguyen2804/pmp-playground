@@ -65,3 +65,17 @@ create index idx_question_external_id on pmp_questions(external_id);
 create index idx_question_type on pmp_questions(question_type);
 create index idx_question_source on pmp_questions(source);
 create index idx_question_category_category on question_categories(category_id);
+
+-- Added by Flyway V6.
+create table question_answer_attempts (
+    id bigserial primary key,
+    question_id bigint not null references pmp_questions(id) on delete cascade,
+    question_type varchar(20) not null,
+    submitted_answer_json text not null,
+    correct boolean not null,
+    session_id varchar(80),
+    answered_at timestamptz not null
+);
+
+create index idx_answer_attempt_question_time
+    on question_answer_attempts(question_id, answered_at desc);

@@ -2,6 +2,9 @@
   <div><h1>Ngân hàng câu hỏi PMP</h1><p>{{ totalElements() }} câu hỏi đã lưu. So sánh PMA và ChatGPT trước khi chốt lời giải cuối.</p></div>
   <div class="header-actions">
     <button class="button ghost" type="button" (click)="refresh()">↻ Tải lại dữ liệu</button>
+    <button class="button ghost" type="button" [disabled]="exporting()" (click)="exportCsv()">
+      {{ exporting() ? 'Đang xuất CSV...' : '↓ Xuất toàn bộ CSV' }}
+    </button>
     <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
   </div>
 </section>

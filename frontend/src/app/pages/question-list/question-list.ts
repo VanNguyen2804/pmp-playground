@@ -37,6 +37,7 @@ export class QuestionList implements OnInit, OnDestroy {
   readonly totalElements = signal(0);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly exporting = signal(false);
 
   private loadSubscription?: Subscription;
   private categoriesSubscription?: Subscription;
@@ -94,6 +95,39 @@ export class QuestionList implements OnInit, OnDestroy {
     });
   }
 
+  exportCsv(): void {
+    if (this.exporting()) return;
+
+    this.exporting.set(true);
+    this.service.exportCsv().pipe(take(1)).subscribe({
+      next: response => {
+        const blob = response.body;
+        if (!blob) {
+          this.error.set('Backend không trả về nội dung file CSV.');
+          this.exporting.set(false);
+          return;
+        }
+
+        const filename = this.extractFilename(response.headers.get('Content-Disposition'))
+          ?? `pmp_questions_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = filename;
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+        this.exporting.set(false);
+      },
+      error: () => {
+        this.error.set('Không thể xuất CSV. Xem modal lỗi để biết thêm chi tiết.');
+        this.exporting.set(false);
+      }
+    });
+  }
+
   refresh(): void {
     this.load(this.page());
     this.loadCategories();
@@ -124,6 +158,22 @@ export class QuestionList implements OnInit, OnDestroy {
 
   trackCategory(_: number, category: CategorySummary): number | string {
     return category.id ?? category.code;
+  }
+
+  private extractFilename(contentDisposition: string | null): string | null {
+    if (!contentDisposition) return null;
+
+    const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1].replace(/["']/g, '').trim());
+      } catch {
+        return utf8Match[1].replace(/["']/g, '').trim();
+      }
+    }
+
+    const plainMatch = /filename="?([^";]+)"?/i.exec(contentDisposition);
+    return plainMatch?.[1]?.trim() ?? null;
   }
 
   private loadCategories(): void {

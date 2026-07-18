@@ -1,8 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy } from '../models/question';
+import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -39,6 +39,13 @@ export class QuestionService {
     return this.http.get<PageResponse<Question>>(this.questionsUrl, { params });
   }
 
+  exportCsv(): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.questionsUrl}/export/csv`, {
+      observe: 'response',
+      responseType: 'blob'
+    });
+  }
+
   categories(taxonomy?: Taxonomy): Observable<CategorySummary[]> {
     let params = new HttpParams();
     if (taxonomy) params = params.set('taxonomy', taxonomy);
@@ -69,5 +76,22 @@ export class QuestionService {
     if (categoryCode?.trim()) params = params.set('categoryCode', categoryCode.trim());
     if (questionType) params = params.set('questionType', questionType);
     return this.http.get<Question[]>(`${this.questionsUrl}/random`, { params });
+  }
+
+
+  submitAttempt(questionId: number, request: AnswerAttemptRequest): Observable<AnswerAttemptResponse> {
+    return this.http.post<AnswerAttemptResponse>(`${this.questionsUrl}/${questionId}/attempts`, request);
+  }
+
+  answerHistory(questionId: number, page = 0, size = 20): Observable<PageResponse<AnswerAttemptResponse>> {
+    const params = new HttpParams().set('page', String(page)).set('size', String(size));
+    return this.http.get<PageResponse<AnswerAttemptResponse>>(
+      `${this.questionsUrl}/${questionId}/attempts`,
+      { params }
+    );
+  }
+
+  answerHistorySummary(questionId: number): Observable<AnswerHistorySummary> {
+    return this.http.get<AnswerHistorySummary>(`${this.questionsUrl}/${questionId}/attempts/summary`);
   }
 }
