@@ -216,3 +216,7 @@ Never commit database passwords, GitHub tokens, or production secrets. Use Rende
 ## Frontend cannot call backend
 
 See [`docs/FRONTEND_BACKEND_CONNECTION.md`](docs/FRONTEND_BACKEND_CONNECTION.md). The production frontend must use the backend's public URL through `API_BASE_URL`; a Render private service hostname cannot be called from the browser.
+
+## Database migrations
+
+The backend uses **Flyway** for H2 and PostgreSQL/Neon schema changes. See [`docs/FLYWAY_MIGRATIONS.md`](docs/FLYWAY_MIGRATIONS.md). Hibernate runs with `ddl-auto=validate`; add a new versioned SQL migration for every schema change.

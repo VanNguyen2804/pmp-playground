@@ -1,4 +1,4 @@
--- Reference only. The application currently creates/updates the schema through Hibernate.
+-- Reference only. Flyway owns schema changes; Hibernate validates the resulting schema.
 create table categories (
   id bigserial primary key,
   code varchar(80) not null unique,

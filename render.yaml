@@ -12,6 +12,10 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      - key: DB_DDL_AUTO
+        value: validate
+      - key: FLYWAY_BASELINE_ON_MIGRATE
+        sync: false
       - key: SPRING_DATASOURCE_URL
         sync: false
       - key: SPRING_DATASOURCE_USERNAME

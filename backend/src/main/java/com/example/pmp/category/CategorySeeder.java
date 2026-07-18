@@ -2,12 +2,14 @@ package com.example.pmp.category;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Component
+@Order(100)
 public class CategorySeeder implements ApplicationRunner {
     private final CategoryRepository repository;
 

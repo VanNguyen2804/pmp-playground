@@ -12,3 +12,12 @@
 The active taxonomy is `PMP_TOPIC`. Legacy PMBOK/PMA category rows remain in the database but are set inactive for migration safety.
 
 Use `POST /api/questions/reclassify` after deployment to classify all existing questions into the new topics.
+
+## Existing Neon database migration
+
+Older database versions may contain a PostgreSQL enum-style CHECK constraint that only accepts
+`PMBOK8_DOMAIN` and `PMA_HANDOUT_TOPIC`. Hibernate `ddl-auto=update` does not automatically widen
+that constraint when `PMP_TOPIC` is introduced.
+
+The application now repairs `categories_taxonomy_check` before seeding categories. For an immediate
+manual fix, run `docs/migration-fix-category-taxonomy.sql` in the Neon SQL Editor, then redeploy.

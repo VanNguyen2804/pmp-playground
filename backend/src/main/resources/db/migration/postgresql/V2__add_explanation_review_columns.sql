@@ -1,6 +1,4 @@
--- Emergency/manual equivalent of Flyway migration V2.
--- Normal deployments should NOT run this file manually.
--- Use backend/src/main/resources/db/migration/postgresql/V2__add_explanation_review_columns.sql through Flyway.
+-- Safe upgrade for databases created before the explanation-review feature.
 
 alter table pmp_questions add column if not exists ai_explanation text;
 alter table pmp_questions add column if not exists final_explanation text;
