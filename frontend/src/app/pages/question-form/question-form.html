@@ -1,5 +1,6 @@
-<section class="page-header"><div><h1>{{ id ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi PMP' }}</h1><p>So sánh lời giải PMA và lời giải AI trước khi chốt lời giải cuối cùng.</p></div></section>
-<form class="card form" [formGroup]="form" (ngSubmit)="save()">
+<section class="page-header"><div><h1>{{ id() ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi PMP' }}</h1><p>So sánh lời giải PMA và lời giải AI trước khi chốt lời giải cuối cùng.</p></div></section>
+<section class="card request-state" *ngIf="loading()"><strong>Đang tải câu hỏi...</strong></section>
+<form class="card form" [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading()">
   <div class="fields-grid">
     <div><label>Loại câu hỏi</label><select formControlName="questionType"><option value="MCQ">MCQ — một đáp án</option><option value="MRQ">MRQ — nhiều đáp án</option></select></div>
     <div><label>Độ khó</label><select formControlName="difficulty"><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select></div>
@@ -57,7 +58,7 @@
     <label>Ghi chú so sánh</label><textarea rows="3" formControlName="explanationReviewNotes" placeholder="Ví dụ: PMA đúng đáp án nhưng AI giải thích rõ hơn; bản cuối kết hợp cả hai."></textarea>
   </section>
 
-  <label>Categories</label><select multiple size="12" formControlName="categoryCodes"><option *ngFor="let c of categories" [value]="c.code">{{ c.name }}</option></select>
+  <label>Categories</label><select multiple size="12" formControlName="categoryCodes"><option *ngFor="let c of categories()" [value]="c.code">{{ c.name }}</option></select>
   <div class="fields-grid"><div><label>Reference</label><input formControlName="reference"></div><div><label>Tags</label><input formControlName="tags"></div></div>
-  <p class="error" *ngIf="error">{{ error }}</p><div class="actions"><a class="button ghost" routerLink="/questions">Hủy</a><button class="button primary" type="submit" [disabled]="saving">{{ saving ? 'Đang lưu...' : 'Lưu câu hỏi' }}</button></div>
+  <p class="error" *ngIf="error()">{{ error() }}</p><div class="actions"><a class="button ghost" routerLink="/questions">Hủy</a><button class="button primary" type="submit" [disabled]="saving()">{{ saving() ? 'Đang lưu...' : 'Lưu câu hỏi' }}</button></div>
 </form>

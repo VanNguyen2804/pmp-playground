@@ -1,5 +1,5 @@
 <section class="page-header">
-  <div><h1>Ngân hàng câu hỏi PMP</h1><p>{{ totalElements }} câu hỏi đã lưu. So sánh PMA và ChatGPT trước khi chốt lời giải cuối.</p></div>
+  <div><h1>Ngân hàng câu hỏi PMP</h1><p>{{ totalElements() }} câu hỏi đã lưu. So sánh PMA và ChatGPT trước khi chốt lời giải cuối.</p></div>
   <div class="header-actions">
     <button class="button ghost" type="button" (click)="refresh()">↻ Tải lại dữ liệu</button>
     <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
@@ -7,19 +7,19 @@
 </section>
 
 <section class="card filters">
-  <input [(ngModel)]="search" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, mọi lời giải hoặc tag">
-  <select [(ngModel)]="categoryCode">
+  <input [ngModel]="search()" (ngModelChange)="search.set($event)" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, mọi lời giải hoặc tag">
+  <select [ngModel]="categoryCode()" (ngModelChange)="categoryCode.set($event)">
     <option value="">Mọi category</option>
-    <option *ngFor="let c of categories" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
+    <option *ngFor="let c of categories(); trackBy: trackCategory" [value]="c.code">{{ c.name }} ({{ c.questionCount }})</option>
   </select>
-  <select [(ngModel)]="questionType"><option value="">Mọi loại</option><option value="MCQ">MCQ</option><option value="MRQ">MRQ</option><option value="MATCHING">Matching</option></select>
-  <select [(ngModel)]="difficulty"><option value="">Mọi độ khó</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select>
-  <select [(ngModel)]="reviewStatus"><option value="">Mọi trạng thái</option><option value="PENDING">Chờ duyệt lời giải</option><option value="REVIEWED">Đã chốt lời giải</option></select>
+  <select [ngModel]="questionType()" (ngModelChange)="questionType.set($event)"><option value="">Mọi loại</option><option value="MCQ">MCQ</option><option value="MRQ">MRQ</option><option value="MATCHING">Matching</option></select>
+  <select [ngModel]="difficulty()" (ngModelChange)="difficulty.set($event)"><option value="">Mọi độ khó</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select>
+  <select [ngModel]="reviewStatus()" (ngModelChange)="reviewStatus.set($event)"><option value="">Mọi trạng thái</option><option value="PENDING">Chờ duyệt lời giải</option><option value="REVIEWED">Đã chốt lời giải</option></select>
   <button class="button primary" (click)="load(0)">Tìm</button>
   <button class="button ghost" (click)="clearFilters()">Xóa lọc</button>
 </section>
 
-<section class="card request-state" *ngIf="loading">
+<section class="card request-state" *ngIf="loading()">
   <div class="spinner" aria-hidden="true"></div>
   <div>
     <strong>Đang tải dữ liệu...</strong>
@@ -27,12 +27,12 @@
   </div>
   <button class="button ghost" type="button" (click)="refresh()">Hủy request cũ và tải lại</button>
 </section>
-<section class="card request-state error-state" *ngIf="!loading && error">
-  <div><strong>Không tải được dữ liệu</strong><p>{{ error }}</p></div>
+<section class="card request-state error-state" *ngIf="!loading() && error()">
+  <div><strong>Không tải được dữ liệu</strong><p>{{ error() }}</p></div>
   <button class="button primary" type="button" (click)="refresh()">Tải lại dữ liệu</button>
 </section>
-<div class="question-grid" *ngIf="!loading">
-  <article class="card question-card" *ngFor="let q of questions">
+<div class="question-grid" *ngIf="!loading()">
+  <article class="card question-card" *ngFor="let q of questions(); trackBy: trackQuestion">
     <div class="meta"><span>{{ q.questionType }}</span><span>{{ q.source || 'MANUAL' }}</span><span *ngIf="q.examName">{{ q.examName }}</span><span class="review-state" [class.reviewed]="q.explanationReviewStatus === 'REVIEWED'">{{ q.explanationReviewStatus === 'REVIEWED' ? 'Đã duyệt' : 'Chờ duyệt' }}</span></div>
     <h2>{{ q.questionText }}</h2>
     <img class="question-image" *ngIf="q.imageUrl" [src]="q.imageUrl" alt="Question illustration">
@@ -56,5 +56,5 @@
     <div class="actions"><a class="button ghost" [routerLink]="['/questions', q.id, 'explanations']">So sánh lời giải</a><a class="button ghost" *ngIf="q.questionType !== 'MATCHING'" [routerLink]="['/questions', q.id, 'edit']">Sửa câu hỏi</a><button class="button danger" (click)="remove(q)">Xóa</button></div>
   </article>
 </div>
-<div class="empty card" *ngIf="!loading && questions.length === 0">Chưa có câu hỏi phù hợp. Hãy upload file PMA JSON.</div>
-<nav class="pagination" *ngIf="totalPages > 1"><button class="button ghost" [disabled]="page === 0" (click)="load(page - 1)">Trước</button><span>Trang {{ page + 1 }} / {{ totalPages }}</span><button class="button ghost" [disabled]="page + 1 >= totalPages" (click)="load(page + 1)">Sau</button></nav>
+<div class="empty card" *ngIf="!loading() && questions().length === 0">Chưa có câu hỏi phù hợp. Hãy upload file PMA JSON.</div>
+<nav class="pagination" *ngIf="totalPages() > 1"><button class="button ghost" [disabled]="page() === 0" (click)="load(page() - 1)">Trước</button><span>Trang {{ page() + 1 }} / {{ totalPages() }}</span><button class="button ghost" [disabled]="page() + 1 >= totalPages()" (click)="load(page() + 1)">Sau</button></nav>

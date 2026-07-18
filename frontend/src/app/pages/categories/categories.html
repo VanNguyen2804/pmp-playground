@@ -5,18 +5,18 @@
   </div>
   <div class="header-actions">
     <button class="button ghost" type="button" (click)="load()">↻ Tải lại</button>
-    <button class="button ghost" type="button" (click)="reclassify()" [disabled]="reclassifying || loading">
-      {{ reclassifying ? 'Đang phân loại...' : 'Phân loại lại toàn bộ' }}
+    <button class="button ghost" type="button" (click)="reclassify()" [disabled]="reclassifying() || loading()">
+      {{ reclassifying() ? 'Đang phân loại...' : 'Phân loại lại toàn bộ' }}
     </button>
   </div>
 </section>
-<p class="success" *ngIf="success">{{ success }}</p>
-<section class="card request-state" *ngIf="loading"><strong>Đang tải categories...</strong><button class="button ghost" type="button" (click)="load()">Tải lại</button></section>
-<section class="card request-state error-state" *ngIf="!loading && error"><span>{{ error }}</span><button class="button primary" type="button" (click)="load()">Tải lại</button></section>
+<p class="success" *ngIf="success()">{{ success() }}</p>
+<section class="card request-state" *ngIf="loading()"><strong>Đang tải categories...</strong><button class="button ghost" type="button" (click)="load()">Tải lại</button></section>
+<section class="card request-state error-state" *ngIf="!loading() && error()"><span>{{ error() }}</span><button class="button primary" type="button" (click)="load()">Tải lại</button></section>
 
-<section *ngIf="!loading">
+<section *ngIf="!loading()">
   <div class="category-grid">
-    <a class="card category-card" *ngFor="let c of categories" [routerLink]="['/questions']" [queryParams]="{categoryCode: c.code}">
+    <a class="card category-card" *ngFor="let c of categories(); trackBy: trackCategory" [routerLink]="['/questions']" [queryParams]="{categoryCode: c.code}">
       <span class="count">{{ c.questionCount }}</span>
       <h3>{{ c.name }}</h3>
       <p>{{ c.description }}</p>

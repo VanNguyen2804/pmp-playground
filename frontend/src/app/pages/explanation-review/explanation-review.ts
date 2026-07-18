@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription, take } from 'rxjs';
 import { ExplanationReviewStatus, FinalExplanationSource, Question } from '../../models/question';
 import { QuestionService } from '../../services/question.service';
 
@@ -10,13 +11,18 @@ import { QuestionService } from '../../services/question.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './explanation-review.html',
-  styleUrl: './explanation-review.css'
+  styleUrl: './explanation-review.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ExplanationReview implements OnInit {
-  question?: Question;
-  saving = false;
-  error = '';
+export class ExplanationReview implements OnInit, OnDestroy {
+  readonly question = signal<Question | undefined>(undefined);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly error = signal('');
   readonly form;
+
+  private loadSubscription?: Subscription;
+  private saveSubscription?: Subscription;
 
   constructor(
     fb: FormBuilder,
@@ -37,12 +43,14 @@ export class ExplanationReview implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!Number.isFinite(id) || id <= 0) {
-      this.error = 'Question ID không hợp lệ.';
+      this.error.set('Question ID không hợp lệ.');
       return;
     }
-    this.service.get(id).subscribe({
+
+    this.loading.set(true);
+    this.loadSubscription = this.service.get(id).pipe(take(1)).subscribe({
       next: question => {
-        this.question = question;
+        this.question.set(question);
         this.form.patchValue({
           pmaExplanation: question.pmaExplanation ?? '',
           aiExplanation: question.aiExplanation ?? '',
@@ -51,42 +59,83 @@ export class ExplanationReview implements OnInit {
           explanationReviewStatus: question.explanationReviewStatus ?? 'PENDING',
           explanationReviewNotes: question.explanationReviewNotes ?? ''
         });
+        this.loading.set(false);
       },
-      error: () => this.error = ''
+      error: () => {
+        this.error.set('Không tải được câu hỏi. Xem modal lỗi để biết chi tiết.');
+        this.loading.set(false);
+      }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.loadSubscription?.unsubscribe();
+    this.saveSubscription?.unsubscribe();
   }
 
   usePma(): void {
     const text = this.form.controls.pmaExplanation.value.trim();
-    if (text) this.form.patchValue({ finalExplanation: text, finalExplanationSource: 'PMA', explanationReviewStatus: 'PENDING' });
+    if (text) {
+      this.form.patchValue({
+        finalExplanation: text,
+        finalExplanationSource: 'PMA',
+        explanationReviewStatus: 'PENDING'
+      });
+    }
   }
 
   useAi(): void {
     const text = this.form.controls.aiExplanation.value.trim();
-    if (text) this.form.patchValue({ finalExplanation: text, finalExplanationSource: 'AI', explanationReviewStatus: 'PENDING' });
+    if (text) {
+      this.form.patchValue({
+        finalExplanation: text,
+        finalExplanationSource: 'AI',
+        explanationReviewStatus: 'PENDING'
+      });
+    }
   }
 
   merge(): void {
     const pma = this.form.controls.pmaExplanation.value.trim();
     const ai = this.form.controls.aiExplanation.value.trim();
     if (!pma && !ai) return;
-    const merged = [pma ? `PMA:\n${pma}` : '', ai ? `ChatGPT bổ sung:\n${ai}` : ''].filter(Boolean).join('\n\n');
-    this.form.patchValue({ finalExplanation: merged, finalExplanationSource: 'MERGED', explanationReviewStatus: 'PENDING' });
+
+    const merged = [
+      pma ? `PMA:\n${pma}` : '',
+      ai ? `ChatGPT bổ sung:\n${ai}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    this.form.patchValue({
+      finalExplanation: merged,
+      finalExplanationSource: 'MERGED',
+      explanationReviewStatus: 'PENDING'
+    });
   }
 
   clearFinal(): void {
-    this.form.patchValue({ finalExplanation: '', finalExplanationSource: 'NONE', explanationReviewStatus: 'PENDING' });
+    this.form.patchValue({
+      finalExplanation: '',
+      finalExplanationSource: 'NONE',
+      explanationReviewStatus: 'PENDING'
+    });
   }
 
   save(): void {
-    if (!this.question?.id) return;
-    this.saving = true;
-    this.error = '';
-    this.service.updateExplanations(this.question.id, this.form.getRawValue()).subscribe({
-      next: () => this.router.navigateByUrl('/questions'),
-      error: err => {
-        this.error = '';
-        this.saving = false;
+    const question = this.question();
+    if (!question?.id) return;
+
+    this.saveSubscription?.unsubscribe();
+    this.saving.set(true);
+    this.error.set('');
+
+    this.saveSubscription = this.service.updateExplanations(question.id, this.form.getRawValue()).pipe(take(1)).subscribe({
+      next: () => {
+        this.saving.set(false);
+        void this.router.navigateByUrl('/questions');
+      },
+      error: () => {
+        this.error.set('Không thể lưu lời giải. Xem modal lỗi để biết chi tiết.');
+        this.saving.set(false);
       }
     });
   }
