@@ -1,0 +1,16 @@
+[
+  {
+    "questionText": "Which document contains the strategy for team training?",
+    "optionA": "Risk register",
+    "optionB": "Resource management plan",
+    "optionC": "Issue log",
+    "optionD": "Project charter",
+    "correctOption": "B",
+    "explanation": "Training and team development strategies are documented in the resource management plan.",
+    "category": "Resource",
+    "difficulty": "EASY",
+    "source": "PMP Practice",
+    "reference": "PMBOK 8 - Resource Management Plan",
+    "tags": "training,resource plan"
+  }
+]

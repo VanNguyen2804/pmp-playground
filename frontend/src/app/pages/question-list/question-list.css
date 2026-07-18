@@ -1,0 +1,12 @@
+.filters { display: grid; grid-template-columns: 2fr 1fr 180px auto auto; gap: 12px; margin-bottom: 20px; }
+.question-grid { display: grid; gap: 16px; }
+.question-card h2 { font-size: 1.05rem; line-height: 1.5; margin: 10px 0; }
+.question-card ol { line-height: 1.7; padding-left: 28px; }
+.meta { display: flex; gap: 8px; font-size: .8rem; color: var(--muted); text-transform: uppercase; }
+.meta span { background: var(--soft); border-radius: 999px; padding: 5px 9px; }
+.explanation { background: #f0fdf4; padding: 12px; border-radius: 8px; }
+.reference { color: var(--muted); }
+.actions { display: flex; gap: 8px; justify-content: flex-end; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; }
+.empty { text-align: center; color: var(--muted); }
+@media (max-width: 900px) { .filters { grid-template-columns: 1fr; } }

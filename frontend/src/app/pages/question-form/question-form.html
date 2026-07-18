@@ -1,0 +1,49 @@
+<section class="page-header">
+  <div>
+    <h1>{{ id ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi PMP' }}</h1>
+    <p>Lưu câu hỏi, đáp án đúng, giải thích và tham chiếu PMBOK/PMA.</p>
+  </div>
+</section>
+
+<form class="card form" [formGroup]="form" (ngSubmit)="save()">
+  <label>Câu hỏi *</label>
+  <textarea rows="4" formControlName="questionText"></textarea>
+
+  <div class="options-grid">
+    <div><label>Đáp án A *</label><textarea rows="2" formControlName="optionA"></textarea></div>
+    <div><label>Đáp án B *</label><textarea rows="2" formControlName="optionB"></textarea></div>
+    <div><label>Đáp án C *</label><textarea rows="2" formControlName="optionC"></textarea></div>
+    <div><label>Đáp án D *</label><textarea rows="2" formControlName="optionD"></textarea></div>
+  </div>
+
+  <div class="fields-grid">
+    <div>
+      <label>Đáp án đúng *</label>
+      <select formControlName="correctOption">
+        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+      </select>
+    </div>
+    <div>
+      <label>Độ khó</label>
+      <select formControlName="difficulty">
+        <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+      </select>
+    </div>
+    <div><label>Category</label><input formControlName="category"></div>
+    <div><label>Tags</label><input formControlName="tags" placeholder="risk, agile, stakeholder"></div>
+  </div>
+
+  <label>Giải thích</label>
+  <textarea rows="5" formControlName="explanation"></textarea>
+
+  <div class="fields-grid">
+    <div><label>Nguồn</label><input formControlName="source" placeholder="PMA, Mock exam..."></div>
+    <div><label>Tham chiếu</label><input formControlName="reference" placeholder="PMBOK 8, section/page..."></div>
+  </div>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+  <div class="actions">
+    <a class="button ghost" routerLink="/questions">Hủy</a>
+    <button class="button primary" type="submit" [disabled]="saving">{{ saving ? 'Đang lưu...' : 'Lưu câu hỏi' }}</button>
+  </div>
+</form>

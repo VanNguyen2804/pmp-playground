@@ -1,0 +1,56 @@
+<section class="page-header">
+  <div>
+    <h1>Ngân hàng câu hỏi PMP</h1>
+    <p>{{ totalElements }} câu hỏi đã lưu.</p>
+  </div>
+  <a class="button primary" routerLink="/questions/new">Thêm câu hỏi</a>
+</section>
+
+<section class="card filters">
+  <input [(ngModel)]="search" (keyup.enter)="load(0)" placeholder="Tìm câu hỏi, giải thích hoặc tag">
+  <input [(ngModel)]="category" (keyup.enter)="load(0)" placeholder="Category, ví dụ: Risk">
+  <select [(ngModel)]="difficulty">
+    <option value="">Mọi độ khó</option>
+    <option value="EASY">Easy</option>
+    <option value="MEDIUM">Medium</option>
+    <option value="HARD">Hard</option>
+  </select>
+  <button class="button primary" (click)="load(0)">Tìm</button>
+  <button class="button ghost" (click)="clearFilters()">Xóa lọc</button>
+</section>
+
+<p class="error" *ngIf="error">{{ error }}</p>
+<p *ngIf="loading">Đang tải...</p>
+
+<div class="question-grid" *ngIf="!loading">
+  <article class="card question-card" *ngFor="let q of questions">
+    <div class="meta">
+      <span>{{ q.category || 'Chưa phân loại' }}</span>
+      <span>{{ q.difficulty || 'N/A' }}</span>
+    </div>
+    <h2>{{ q.questionText }}</h2>
+    <ol type="A">
+      <li>{{ q.optionA }}</li>
+      <li>{{ q.optionB }}</li>
+      <li>{{ q.optionC }}</li>
+      <li>{{ q.optionD }}</li>
+    </ol>
+    <p><strong>Đáp án:</strong> {{ q.correctOption }}</p>
+    <p class="explanation" *ngIf="q.explanation">{{ q.explanation }}</p>
+    <p class="reference" *ngIf="q.reference"><strong>Tham chiếu:</strong> {{ q.reference }}</p>
+    <div class="actions">
+      <a class="button ghost" [routerLink]="['/questions', q.id, 'edit']">Sửa</a>
+      <button class="button danger" (click)="remove(q)">Xóa</button>
+    </div>
+  </article>
+</div>
+
+<div class="empty card" *ngIf="!loading && questions.length === 0">
+  Chưa có câu hỏi phù hợp. Hãy thêm thủ công hoặc upload CSV/JSON.
+</div>
+
+<nav class="pagination" *ngIf="totalPages > 1">
+  <button class="button ghost" [disabled]="page === 0" (click)="load(page - 1)">Trước</button>
+  <span>Trang {{ page + 1 }} / {{ totalPages }}</span>
+  <button class="button ghost" [disabled]="page + 1 >= totalPages" (click)="load(page + 1)">Sau</button>
+</nav>

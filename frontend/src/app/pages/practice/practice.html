@@ -1,0 +1,48 @@
+<section class="page-header">
+  <div>
+    <h1>Luyện tập PMP</h1>
+    <p>Lấy ngẫu nhiên 10 câu từ ngân hàng dữ liệu.</p>
+  </div>
+  <div class="practice-filter">
+    <input [(ngModel)]="category" placeholder="Category tùy chọn">
+    <button class="button ghost" (click)="start()">Tạo bộ câu hỏi mới</button>
+  </div>
+</section>
+
+<p class="error" *ngIf="error">{{ error }}</p>
+<p *ngIf="loading">Đang tải...</p>
+
+<section class="card result" *ngIf="finished">
+  <h2>Kết quả: {{ score }} / {{ questions.length }}</h2>
+  <button class="button primary" (click)="start()">Làm lại</button>
+</section>
+
+<section class="card quiz" *ngIf="!loading && !finished && current as q">
+  <div class="progress">Câu {{ index + 1 }} / {{ questions.length }} · Điểm {{ score }}</div>
+  <h2>{{ q.questionText }}</h2>
+
+  <button
+    class="option"
+    *ngFor="let option of ['A','B','C','D']"
+    [class.selected]="selected === option"
+    [class.correct]="revealed && q.correctOption === option"
+    [class.wrong]="revealed && selected === option && selected !== q.correctOption"
+    (click)="choose($any(option))">
+    <strong>{{ option }}.</strong> {{ optionText(q, $any(option)) }}
+  </button>
+
+  <div class="feedback" *ngIf="revealed">
+    <p><strong>Đáp án đúng: {{ q.correctOption }}</strong></p>
+    <p *ngIf="q.explanation">{{ q.explanation }}</p>
+    <p *ngIf="q.reference"><strong>Tham chiếu:</strong> {{ q.reference }}</p>
+  </div>
+
+  <div class="actions">
+    <button class="button primary" *ngIf="!revealed" [disabled]="!selected" (click)="check()">Kiểm tra</button>
+    <button class="button primary" *ngIf="revealed" (click)="next()">{{ index + 1 === questions.length ? 'Xem kết quả' : 'Câu tiếp theo' }}</button>
+  </div>
+</section>
+
+<section class="card empty" *ngIf="!loading && questions.length === 0">
+  Chưa có dữ liệu. Hãy upload câu hỏi trước.
+</section>

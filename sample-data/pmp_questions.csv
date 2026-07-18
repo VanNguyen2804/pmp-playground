@@ -1,0 +1,3 @@
+questionText,optionA,optionB,optionC,optionD,correctOption,explanation,category,difficulty,source,reference,tags
+"A project manager discovers a new technical competency gap. What should be done next?","Use contingency reserve","Conduct unplanned training","Replace the team member","Escalate to sponsor",B,"A newly discovered skills gap can be addressed through unplanned training.",Resource,MEDIUM,PMP Practice,"PMBOK 8 - Training","training,team"
+"Which chart shows remaining work trending toward zero during an iteration?","Burnup chart","Gantt chart","Burndown chart","Pareto chart",C,"A burndown chart displays remaining work over time.",Agile,EASY,PMP Practice,"Adaptive metrics","burndown,agile"
