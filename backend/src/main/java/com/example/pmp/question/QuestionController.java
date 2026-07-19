@@ -57,6 +57,16 @@ public class QuestionController {
         return answerHistoryService.dashboard();
     }
 
+    @GetMapping("/practice/analytics")
+    public ResponseEntity<PracticeAnalyticsResponse> practiceAnalytics(
+            @RequestParam(defaultValue = "14") int days,
+            @RequestParam(defaultValue = "10") int top,
+            @RequestParam(defaultValue = "UTC") String timeZone) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(answerHistoryService.analytics(days, top, timeZone));
+    }
+
     @GetMapping("/review/wrong")
     public WrongQuestionReviewResponse wrongQuestionReview(
             @RequestParam(required = false) String categoryCode,

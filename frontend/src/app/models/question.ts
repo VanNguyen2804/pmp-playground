@@ -146,3 +146,62 @@ export interface WrongQuestionReviewResponse {
   totalQuestions: number;
   questions: Question[];
 }
+
+
+export type PracticeProgressStatus = 'NO_DATA' | 'NEW_BASELINE' | 'IMPROVING' | 'STABLE' | 'DECLINING';
+
+export interface PracticeAnalyticsSummary {
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  accuracyPercentage: number;
+  previousTotalAttempts: number;
+  previousAccuracyPercentage: number;
+  improvementPercentagePoints: number;
+  progressStatus: PracticeProgressStatus;
+  mostWrongCategoryCode?: string | null;
+  mostWrongCategoryName?: string | null;
+  mostWrongCategoryIncorrectAttempts: number;
+}
+
+export interface CategoryMistakeStatistic {
+  categoryCode: string;
+  categoryName: string;
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  uniqueWrongQuestions: number;
+  accuracyPercentage: number;
+  incorrectPercentage: number;
+}
+
+export interface DailyAccuracyStatistic {
+  date: string;
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  accuracyPercentage: number;
+}
+
+export interface TopWrongQuestionStatistic {
+  questionId: number;
+  examName?: string | null;
+  questionNumber: string;
+  questionText: string;
+  categoryNames: string[];
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  lastAnswerCorrect?: boolean | null;
+  lastAnsweredAt?: string | null;
+}
+
+export interface PracticeAnalytics {
+  generatedAt: string;
+  periodDays: number;
+  timeZone: string;
+  summary: PracticeAnalyticsSummary;
+  categoryStats: CategoryMistakeStatistic[];
+  dailyTrend: DailyAccuracyStatistic[];
+  topWrongQuestions: TopWrongQuestionStatistic[];
+}

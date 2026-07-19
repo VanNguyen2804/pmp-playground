@@ -7,7 +7,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.DateTimeException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -97,6 +105,110 @@ public class QuestionAnswerHistoryService {
     }
 
     @Transactional(readOnly = true)
+    public PracticeAnalyticsResponse analytics(int requestedDays, int requestedTop, String requestedTimeZone) {
+        int days = Math.min(Math.max(requestedDays, 7), 90);
+        int top = Math.min(Math.max(requestedTop, 1), 25);
+        ZoneId zoneId = resolveZoneId(requestedTimeZone);
+        Instant now = Instant.now();
+        Instant currentFrom = now.minus(Duration.ofDays(days));
+        Instant previousFrom = now.minus(Duration.ofDays(days * 2L));
+
+        List<QuestionAnswerAttempt> attempts = attemptRepository
+                .findByAnsweredAtGreaterThanEqualOrderByAnsweredAtDescIdDesc(previousFrom);
+        List<QuestionAnswerAttempt> current = attempts.stream()
+                .filter(attempt -> !attempt.getAnsweredAt().isBefore(currentFrom))
+                .toList();
+        List<QuestionAnswerAttempt> previous = attempts.stream()
+                .filter(attempt -> attempt.getAnsweredAt().isBefore(currentFrom))
+                .toList();
+
+        long currentCorrect = current.stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        long currentIncorrect = current.size() - currentCorrect;
+        long previousCorrect = previous.stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        double currentAccuracy = percentage(currentCorrect, current.size());
+        double previousAccuracy = percentage(previousCorrect, previous.size());
+        double improvement = round2(currentAccuracy - previousAccuracy);
+        String progressStatus = progressStatus(current.size(), previous.size(), improvement);
+
+        Map<String, CategoryAccumulator> categoryMap = new LinkedHashMap<>();
+        for (QuestionAnswerAttempt attempt : current) {
+            Question question = attempt.getQuestion();
+            if (question.getCategories().isEmpty()) {
+                categoryMap.computeIfAbsent("UNCATEGORIZED",
+                                ignored -> new CategoryAccumulator("UNCATEGORIZED", "Chưa phân loại"))
+                        .accept(attempt);
+                continue;
+            }
+            question.getCategories().forEach(category -> categoryMap
+                    .computeIfAbsent(category.getCode(),
+                            ignored -> new CategoryAccumulator(category.getCode(), category.getName()))
+                    .accept(attempt));
+        }
+
+        List<CategoryMistakeStatistic> categoryStats = categoryMap.values().stream()
+                .map(CategoryAccumulator::toRecord)
+                .sorted(Comparator.comparingLong(CategoryMistakeStatistic::incorrectAttempts).reversed()
+                        .thenComparingDouble(CategoryMistakeStatistic::accuracyPercentage)
+                        .thenComparing(CategoryMistakeStatistic::categoryName))
+                .toList();
+
+        CategoryMistakeStatistic mostWrong = categoryStats.stream().findFirst().orElse(null);
+        PracticeAnalyticsSummary summary = new PracticeAnalyticsSummary(
+                current.size(),
+                currentCorrect,
+                currentIncorrect,
+                currentAccuracy,
+                previous.size(),
+                previousAccuracy,
+                improvement,
+                progressStatus,
+                mostWrong == null ? null : mostWrong.categoryCode(),
+                mostWrong == null ? null : mostWrong.categoryName(),
+                mostWrong == null ? 0 : mostWrong.incorrectAttempts()
+        );
+
+        Map<LocalDate, DailyAccumulator> dailyMap = new LinkedHashMap<>();
+        LocalDate firstDate = LocalDate.now(zoneId).minusDays(days - 1L);
+        for (int offset = 0; offset < days; offset++) {
+            LocalDate date = firstDate.plusDays(offset);
+            dailyMap.put(date, new DailyAccumulator(date));
+        }
+        for (QuestionAnswerAttempt attempt : current) {
+            LocalDate date = attempt.getAnsweredAt().atZone(zoneId).toLocalDate();
+            DailyAccumulator accumulator = dailyMap.get(date);
+            if (accumulator != null) accumulator.accept(attempt);
+        }
+        List<DailyAccuracyStatistic> dailyTrend = dailyMap.values().stream()
+                .map(DailyAccumulator::toRecord)
+                .toList();
+
+        Map<Long, QuestionAccumulator> questionMap = new LinkedHashMap<>();
+        for (QuestionAnswerAttempt attempt : current) {
+            questionMap.computeIfAbsent(attempt.getQuestion().getId(),
+                            ignored -> new QuestionAccumulator(attempt.getQuestion()))
+                    .accept(attempt);
+        }
+        List<TopWrongQuestionStatistic> topWrongQuestions = questionMap.values().stream()
+                .filter(accumulator -> accumulator.incorrect > 0)
+                .sorted(Comparator.comparingLong((QuestionAccumulator value) -> value.incorrect).reversed()
+                        .thenComparingLong(value -> value.correct)
+                        .thenComparing(value -> value.question.getId()))
+                .limit(top)
+                .map(QuestionAccumulator::toRecord)
+                .toList();
+
+        return new PracticeAnalyticsResponse(
+                now,
+                days,
+                zoneId.getId(),
+                summary,
+                categoryStats,
+                dailyTrend,
+                topWrongQuestions
+        );
+    }
+
+    @Transactional(readOnly = true)
     public WrongQuestionReviewResponse wrongQuestions(String categoryCode, int minIncorrect, int count, boolean shuffle) {
         List<QuestionAnswerAttempt> all = attemptRepository.findAllByOrderByAnsweredAtDescIdDesc();
         Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
@@ -124,6 +236,145 @@ public class QuestionAnswerHistoryService {
         int limit = Math.min(Math.max(count, 1), 100);
         List<QuestionResponse> result = questions.stream().limit(limit).map(QuestionResponse::from).toList();
         return new WrongQuestionReviewResponse(total, result);
+    }
+
+    private ZoneId resolveZoneId(String requestedTimeZone) {
+        if (requestedTimeZone == null || requestedTimeZone.isBlank()) return ZoneOffset.UTC;
+        try {
+            return ZoneId.of(requestedTimeZone.trim());
+        } catch (DateTimeException ex) {
+            return ZoneOffset.UTC;
+        }
+    }
+
+    private double percentage(long numerator, long denominator) {
+        return denominator == 0 ? 0.0 : round2(numerator * 100.0 / denominator);
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
+    private String progressStatus(long currentTotal, long previousTotal, double improvement) {
+        if (currentTotal == 0) return "NO_DATA";
+        if (previousTotal == 0) return "NEW_BASELINE";
+        if (improvement >= 3.0) return "IMPROVING";
+        if (improvement <= -3.0) return "DECLINING";
+        return "STABLE";
+    }
+
+    private String extractQuestionNumber(Question question) {
+        Pattern pattern = Pattern.compile("(?:-|#|question\\s*)\\s*(\\d+)\\s*$", Pattern.CASE_INSENSITIVE);
+        for (String source : List.of(
+                question.getExamName() == null ? "" : question.getExamName(),
+                question.getExternalId() == null ? "" : question.getExternalId())) {
+            Matcher matcher = pattern.matcher(source.trim());
+            if (matcher.find()) {
+                try {
+                    return String.valueOf(Long.parseLong(matcher.group(1)));
+                } catch (NumberFormatException ignored) {
+                    return matcher.group(1);
+                }
+            }
+        }
+        return "Không xác định";
+    }
+
+    private final class CategoryAccumulator {
+        private final String code;
+        private final String name;
+        private long total;
+        private long correct;
+        private long incorrect;
+        private final Set<Long> uniqueWrongQuestions = new HashSet<>();
+
+        private CategoryAccumulator(String code, String name) {
+            this.code = code;
+            this.name = name;
+        }
+
+        private void accept(QuestionAnswerAttempt attempt) {
+            total++;
+            if (attempt.isCorrect()) {
+                correct++;
+            } else {
+                incorrect++;
+                uniqueWrongQuestions.add(attempt.getQuestion().getId());
+            }
+        }
+
+        private CategoryMistakeStatistic toRecord() {
+            return new CategoryMistakeStatistic(
+                    code,
+                    name,
+                    total,
+                    correct,
+                    incorrect,
+                    uniqueWrongQuestions.size(),
+                    percentage(correct, total),
+                    percentage(incorrect, total)
+            );
+        }
+    }
+
+    private final class DailyAccumulator {
+        private final LocalDate date;
+        private long total;
+        private long correct;
+
+        private DailyAccumulator(LocalDate date) {
+            this.date = date;
+        }
+
+        private void accept(QuestionAnswerAttempt attempt) {
+            total++;
+            if (attempt.isCorrect()) correct++;
+        }
+
+        private DailyAccuracyStatistic toRecord() {
+            return new DailyAccuracyStatistic(date, total, correct, total - correct, percentage(correct, total));
+        }
+    }
+
+    private final class QuestionAccumulator {
+        private final Question question;
+        private long total;
+        private long correct;
+        private long incorrect;
+        private Boolean lastAnswerCorrect;
+        private Instant lastAnsweredAt;
+
+        private QuestionAccumulator(Question question) {
+            this.question = question;
+        }
+
+        private void accept(QuestionAnswerAttempt attempt) {
+            total++;
+            if (attempt.isCorrect()) correct++; else incorrect++;
+            if (lastAnsweredAt == null || attempt.getAnsweredAt().isAfter(lastAnsweredAt)) {
+                lastAnsweredAt = attempt.getAnsweredAt();
+                lastAnswerCorrect = attempt.isCorrect();
+            }
+        }
+
+        private TopWrongQuestionStatistic toRecord() {
+            List<String> categoryNames = question.getCategories().stream()
+                    .map(com.example.pmp.category.Category::getName)
+                    .sorted()
+                    .toList();
+            return new TopWrongQuestionStatistic(
+                    question.getId(),
+                    question.getExamName(),
+                    extractQuestionNumber(question),
+                    question.getQuestionText(),
+                    categoryNames,
+                    total,
+                    correct,
+                    incorrect,
+                    lastAnswerCorrect,
+                    lastAnsweredAt
+            );
+        }
     }
 
     private SubmittedAnswer normalizeAndValidate(Question question, AnswerAttemptRequest request) {

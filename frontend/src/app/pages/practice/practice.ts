@@ -7,6 +7,7 @@ import {
   AnswerHistorySummary,
   CategorySummary,
   PageResponse,
+  PracticeAnalytics,
   PracticeDashboard,
   Question
 } from '../../models/question';
@@ -57,6 +58,62 @@ export class Practice implements OnInit, OnDestroy {
   readonly explanationDraft = signal('');
   readonly explanationNotes = signal('');
   readonly saveMessage = signal('');
+  readonly analytics = signal<PracticeAnalytics | null>(null);
+  readonly analyticsDays = signal(14);
+  readonly analyticsLoading = signal(false);
+  readonly analyticsError = signal('');
+
+  readonly categoryMistakeBars = computed(() => {
+    const rows = this.analytics()?.categoryStats?.slice(0, 10) ?? [];
+    const maxIncorrect = Math.max(0, ...rows.map(row => row.incorrectAttempts));
+    return rows.map(row => ({
+      ...row,
+      widthPercentage: maxIncorrect === 0 ? 0 : Math.max(4, row.incorrectAttempts * 100 / maxIncorrect)
+    }));
+  });
+
+  readonly progressDots = computed(() => {
+    const rows = this.analytics()?.dailyTrend ?? [];
+    const left = 48;
+    const right = 708;
+    const top = 20;
+    const bottom = 190;
+    return rows.map((row, index) => ({
+      ...row,
+      x: rows.length <= 1 ? left : left + index * (right - left) / (rows.length - 1),
+      y: bottom - row.accuracyPercentage * (bottom - top) / 100,
+      visible: row.totalAttempts > 0
+    }));
+  });
+
+  readonly progressPolyline = computed(() => this.progressDots()
+    .filter(point => point.visible)
+    .map(point => `${point.x},${point.y}`)
+    .join(' '));
+
+  readonly progressAxisLabels = computed(() => {
+    const rows = this.analytics()?.dailyTrend ?? [];
+    if (!rows.length) return [];
+    const indexes = [...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1])];
+    const left = 48;
+    const right = 708;
+    return indexes.map(index => ({
+      x: rows.length <= 1 ? left : left + index * (right - left) / (rows.length - 1),
+      label: this.shortDate(rows[index].date)
+    }));
+  });
+
+  readonly progressMessage = computed(() => {
+    const summary = this.analytics()?.summary;
+    if (!summary) return '';
+    switch (summary.progressStatus) {
+      case 'IMPROVING': return `Bạn đang tiến bộ +${summary.improvementPercentagePoints.toFixed(1)} điểm %.`;
+      case 'DECLINING': return `Độ chính xác giảm ${Math.abs(summary.improvementPercentagePoints).toFixed(1)} điểm %.`;
+      case 'STABLE': return `Kết quả ổn định (${summary.improvementPercentagePoints >= 0 ? '+' : ''}${summary.improvementPercentagePoints.toFixed(1)} điểm %).`;
+      case 'NEW_BASELINE': return 'Đây là kỳ dữ liệu đầu tiên để làm mốc so sánh.';
+      default: return 'Chưa đủ dữ liệu để đánh giá tiến bộ.';
+    }
+  });
 
   readonly current = computed(() => this.questions()[this.index()]);
   readonly currentExplanation = computed(() => {
@@ -84,6 +141,7 @@ export class Practice implements OnInit, OnDestroy {
   private loadSubscription?: Subscription;
   private answerSubscription?: Subscription;
   private historySubscription?: Subscription;
+  private analyticsSubscription?: Subscription;
   private requestVersion = 0;
 
   constructor(private readonly service: QuestionService) {}
@@ -99,6 +157,7 @@ export class Practice implements OnInit, OnDestroy {
       },
       error: () => undefined
     });
+    this.loadAnalytics();
     this.start();
   }
 
@@ -106,6 +165,25 @@ export class Practice implements OnInit, OnDestroy {
     this.loadSubscription?.unsubscribe();
     this.answerSubscription?.unsubscribe();
     this.historySubscription?.unsubscribe();
+    this.analyticsSubscription?.unsubscribe();
+  }
+
+  loadAnalytics(): void {
+    this.analyticsSubscription?.unsubscribe();
+    this.analyticsLoading.set(true);
+    this.analyticsError.set('');
+    this.analyticsSubscription = this.service.practiceAnalytics(this.analyticsDays(), 10)
+      .pipe(take(1))
+      .subscribe({
+        next: report => {
+          this.analytics.set(report);
+          this.analyticsLoading.set(false);
+        },
+        error: () => {
+          this.analyticsError.set('Không tải được thống kê. Hãy bấm tải lại.');
+          this.analyticsLoading.set(false);
+        }
+      });
   }
 
   start(): void {
@@ -261,7 +339,6 @@ export class Practice implements OnInit, OnDestroy {
     this.answerError.set('');
     this.editingExplanation.set(false);
     this.saveMessage.set('');
-    this.explanationTab.set('FINAL');
     const question = this.current();
     this.matchingChoices.set(question?.questionType === 'MATCHING'
       ? [...question.matchingPairs.map(pair => pair.right)].sort(() => Math.random() - 0.5)
@@ -287,6 +364,11 @@ export class Practice implements OnInit, OnDestroy {
 
   private refreshDashboard(): void {
     this.service.practiceDashboard().pipe(take(1)).subscribe({ next: value => this.dashboard.set(value) });
+  }
+
+  private shortDate(value: string): string {
+    const date = new Date(`${value}T00:00:00`);
+    return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' }).format(date);
   }
 
   private selectedAnswerKeys(): string[] {

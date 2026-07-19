@@ -5,6 +5,134 @@
   <article class="metric-card info"><div class="metric-icon">▣</div><div><span>Hôm nay cần ôn</span><strong>{{ dashboard().dueToday }}</strong><small>câu</small></div></article>
 </section>
 
+<section class="analytics-panel">
+  <header class="analytics-header">
+    <div>
+      <h2>Phân tích lỗi sai & tiến bộ</h2>
+      <p>Biểu đồ chỉ lấy dữ liệu mới khi bạn bấm <b>Tải lại biểu đồ</b>.</p>
+    </div>
+    <div class="analytics-controls">
+      <label>Khoảng thời gian
+        <select [ngModel]="analyticsDays()" (ngModelChange)="analyticsDays.set(+$event)">
+          <option [value]="7">7 ngày</option>
+          <option [value]="14">14 ngày</option>
+          <option [value]="30">30 ngày</option>
+          <option [value]="60">60 ngày</option>
+        </select>
+      </label>
+      <button class="btn primary" [disabled]="analyticsLoading()" (click)="loadAnalytics()">
+        {{ analyticsLoading() ? 'Đang tải...' : '↻ Tải lại biểu đồ' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="analytics-state" *ngIf="analyticsLoading() && !analytics()">Đang tổng hợp lịch sử trả lời...</div>
+  <div class="analytics-state error" *ngIf="analyticsError()">{{ analyticsError() }}</div>
+
+  <ng-container *ngIf="analytics() as report">
+    <div class="analytics-summary-grid">
+      <article>
+        <span>Lượt trả lời sai</span>
+        <strong>{{ report.summary.incorrectAttempts }}</strong>
+        <small>/ {{ report.summary.totalAttempts }} lượt trong {{ report.periodDays }} ngày</small>
+      </article>
+      <article>
+        <span>Category sai nhiều nhất</span>
+        <strong class="category-summary">{{ report.summary.mostWrongCategoryName || 'Chưa có dữ liệu' }}</strong>
+        <small>{{ report.summary.mostWrongCategoryIncorrectAttempts }} lượt sai</small>
+      </article>
+      <article>
+        <span>Độ chính xác hiện tại</span>
+        <strong>{{ report.summary.accuracyPercentage | number:'1.0-1' }}%</strong>
+        <small>Kỳ trước: {{ report.summary.previousAccuracyPercentage | number:'1.0-1' }}%</small>
+      </article>
+      <article [class.improving]="report.summary.progressStatus === 'IMPROVING'"
+               [class.declining]="report.summary.progressStatus === 'DECLINING'">
+        <span>Đánh giá tiến bộ</span>
+        <strong>{{ report.summary.improvementPercentagePoints >= 0 ? '+' : '' }}{{ report.summary.improvementPercentagePoints | number:'1.0-1' }} điểm %</strong>
+        <small>{{ progressMessage() }}</small>
+      </article>
+    </div>
+
+    <div class="analytics-chart-grid">
+      <article class="chart-card">
+        <div class="chart-title">
+          <div><h3>Lỗi sai theo category</h3><p>Xếp hạng theo số lượt trả lời sai.</p></div>
+          <span>{{ report.categoryStats.length }} categories</span>
+        </div>
+        <div class="empty-chart" *ngIf="categoryMistakeBars().length === 0">Chưa có câu trả lời sai trong khoảng thời gian này.</div>
+        <div class="category-bars" *ngIf="categoryMistakeBars().length">
+          <div class="category-bar-row" *ngFor="let item of categoryMistakeBars()">
+            <div class="category-bar-label">
+              <span>{{ item.categoryName }}</span>
+              <b>{{ item.incorrectAttempts }} sai</b>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.widthPercentage"></div>
+            </div>
+            <div class="category-bar-meta">
+              <span>{{ item.uniqueWrongQuestions }} câu khác nhau</span>
+              <span>Accuracy {{ item.accuracyPercentage | number:'1.0-1' }}%</span>
+            </div>
+          </div>
+        </div>
+        <p class="chart-note">Một câu có nhiều category sẽ được tính vào từng category liên quan.</p>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-title">
+          <div><h3>Xu hướng độ chính xác</h3><p>Phần trăm trả lời đúng theo ngày.</p></div>
+          <span>{{ report.periodDays }} ngày</span>
+        </div>
+        <div class="empty-chart" *ngIf="progressPolyline().length === 0">Chưa có dữ liệu luyện tập để vẽ xu hướng.</div>
+        <svg *ngIf="progressPolyline().length" class="progress-chart" viewBox="0 0 740 225" role="img" aria-label="Biểu đồ tiến bộ theo ngày">
+          <line x1="48" y1="20" x2="708" y2="20" class="chart-grid-line"></line>
+          <line x1="48" y1="105" x2="708" y2="105" class="chart-grid-line"></line>
+          <line x1="48" y1="190" x2="708" y2="190" class="chart-grid-line"></line>
+          <text x="8" y="25" class="axis-text">100%</text>
+          <text x="17" y="110" class="axis-text">50%</text>
+          <text x="25" y="195" class="axis-text">0%</text>
+          <polyline [attr.points]="progressPolyline()" class="trend-line"></polyline>
+          <ng-container *ngFor="let point of progressDots()">
+            <circle *ngIf="point.visible" [attr.cx]="point.x" [attr.cy]="point.y" r="5" class="trend-dot">
+              <title>{{ point.date }}: {{ point.accuracyPercentage | number:'1.0-1' }}% ({{ point.totalAttempts }} lượt)</title>
+            </circle>
+          </ng-container>
+          <text *ngFor="let label of progressAxisLabels()" [attr.x]="label.x" y="216" text-anchor="middle" class="axis-text">{{ label.label }}</text>
+        </svg>
+        <div class="progress-comparison">
+          <span>Kỳ trước <b>{{ report.summary.previousAccuracyPercentage | number:'1.0-1' }}%</b></span>
+          <span>Kỳ hiện tại <b>{{ report.summary.accuracyPercentage | number:'1.0-1' }}%</b></span>
+        </div>
+      </article>
+    </div>
+
+    <article class="top-wrong-card">
+      <div class="chart-title">
+        <div><h3>Những câu sai nhiều nhất</h3><p>Dùng danh sách này để ưu tiên ôn lại.</p></div>
+        <span>Cập nhật {{ report.generatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="history-empty" *ngIf="report.topWrongQuestions.length === 0">Chưa có câu trả lời sai.</div>
+      <div class="table-scroll" *ngIf="report.topWrongQuestions.length">
+        <table>
+          <thead><tr><th>#</th><th>Bài thi / Câu</th><th>Nội dung</th><th>Category</th><th>Đúng</th><th>Sai</th><th>Lần gần nhất</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of report.topWrongQuestions; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td><b>{{ item.examName || 'Không xác định' }}</b><br><small>Câu {{ item.questionNumber }}</small></td>
+              <td class="question-snippet">{{ item.questionText }}</td>
+              <td>{{ item.categoryNames.join(', ') || 'Chưa phân loại' }}</td>
+              <td class="good">{{ item.correctAttempts }}</td>
+              <td class="bad"><b>{{ item.incorrectAttempts }}</b></td>
+              <td><span [class.good]="item.lastAnswerCorrect" [class.bad]="item.lastAnswerCorrect === false">{{ item.lastAnswerCorrect ? 'Đúng' : 'Sai' }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </ng-container>
+</section>
+
 <section class="practice-heading">
   <div><h1>Luyện tập lại câu hỏi sai</h1><p>Ôn lại những câu đã trả lời sai để củng cố kiến thức và cải thiện điểm số.</p></div>
 </section>

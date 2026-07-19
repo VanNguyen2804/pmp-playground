@@ -2,7 +2,7 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeDashboard, WrongQuestionReviewResponse } from '../models/question';
+import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeAnalytics, PracticeDashboard, WrongQuestionReviewResponse } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -81,6 +81,16 @@ export class QuestionService {
 
   practiceDashboard(): Observable<PracticeDashboard> {
     return this.http.get<PracticeDashboard>(`${this.questionsUrl}/practice/dashboard`);
+  }
+
+  practiceAnalytics(days = 14, top = 10): Observable<PracticeAnalytics> {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const params = new HttpParams()
+      .set('days', String(days))
+      .set('top', String(top))
+      .set('timeZone', timeZone)
+      .set('_refresh', String(Date.now()));
+    return this.http.get<PracticeAnalytics>(`${this.questionsUrl}/practice/analytics`, { params });
   }
 
   wrongQuestions(filters: { categoryCode?: string; minIncorrect?: number; count?: number; shuffle?: boolean }): Observable<WrongQuestionReviewResponse> {
