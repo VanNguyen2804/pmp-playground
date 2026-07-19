@@ -52,7 +52,6 @@ export class Practice implements OnInit, OnDestroy {
   readonly historyLoading = signal(false);
   readonly totalReviewQuestions = signal(0);
   readonly sessionId = signal(this.createSessionId());
-  readonly explanationTab = signal<'PMA' | 'AI' | 'FINAL'>('FINAL');
   readonly editingExplanation = signal(false);
   readonly savingExplanation = signal(false);
   readonly explanationDraft = signal('');
@@ -63,12 +62,23 @@ export class Practice implements OnInit, OnDestroy {
   readonly currentExplanation = computed(() => {
     const question = this.current();
     if (!question) return '';
-    if (this.explanationTab() === 'PMA') return question.pmaExplanation?.trim() ?? '';
-    if (this.explanationTab() === 'AI') return question.aiExplanation?.trim() ?? '';
     return question.finalExplanation?.trim()
       || question.aiExplanation?.trim()
       || question.pmaExplanation?.trim()
       || '';
+  });
+
+  readonly pmaExamName = computed(() => {
+    const name = this.current()?.examName?.trim();
+    if (!name) return 'Không xác định';
+    return name.replace(/\s*-\s*\d+\s*$/, '').trim() || name;
+  });
+
+  readonly pmaQuestionNumber = computed(() => {
+    const name = this.current()?.examName?.trim() ?? '';
+    const match = name.match(/(?:-|#|question\s*)\s*(\d+)\s*$/i);
+    if (match) return String(Number(match[1]));
+    return 'Không xác định';
   });
 
   private loadSubscription?: Subscription;
@@ -202,19 +212,11 @@ export class Practice implements OnInit, OnDestroy {
     if (!question?.id || !this.explanationDraft().trim()) return;
     this.savingExplanation.set(true);
     this.saveMessage.set('');
-    const finalExplanation = setAsFinal || this.explanationTab() === 'FINAL'
-      ? this.explanationDraft().trim()
-      : question.finalExplanation ?? null;
-    const aiExplanation = this.explanationTab() === 'AI'
-      ? this.explanationDraft().trim()
-      : question.aiExplanation ?? null;
-    const pmaExplanation = this.explanationTab() === 'PMA'
-      ? this.explanationDraft().trim()
-      : question.pmaExplanation ?? null;
+    const finalExplanation = this.explanationDraft().trim();
 
     this.service.updateExplanations(question.id, {
-      pmaExplanation,
-      aiExplanation,
+      pmaExplanation: question.pmaExplanation ?? null,
+      aiExplanation: question.aiExplanation ?? null,
       finalExplanation,
       finalExplanationSource: finalExplanation ? 'MANUAL' : (question.finalExplanationSource ?? 'NONE'),
       explanationReviewStatus: finalExplanation ? 'REVIEWED' : (question.explanationReviewStatus ?? 'PENDING'),
@@ -224,7 +226,6 @@ export class Practice implements OnInit, OnDestroy {
         this.questions.update(items => items.map(item => item.id === updated.id ? updated : item));
         this.savingExplanation.set(false);
         this.editingExplanation.set(false);
-        this.explanationTab.set(setAsFinal ? 'FINAL' : this.explanationTab());
         this.saveMessage.set('Đã lưu giải thích.');
       },
       error: () => {

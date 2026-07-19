@@ -74,11 +74,13 @@
 
   <aside class="explanation-card">
     <h3>Giải thích</h3>
-    <div class="tabs"><button [class.active]="explanationTab()==='PMA'" (click)="explanationTab.set('PMA')">PMA</button><button [class.active]="explanationTab()==='AI'" (click)="explanationTab.set('AI')">AI</button><button [class.active]="explanationTab()==='FINAL'" (click)="explanationTab.set('FINAL')">Cuối cùng</button></div>
+    <div class="exam-reference">
+      <div><span>Bài thi PMA</span><strong>{{ pmaExamName() }}</strong></div>
+      <div><span>Câu số</span><strong>{{ pmaQuestionNumber() }}</strong></div>
+    </div>
     <div class="explanation-body" *ngIf="!editingExplanation()">
       <p *ngIf="currentExplanation(); else noExplanation">{{ currentExplanation() }}</p>
       <ng-template #noExplanation><p class="muted">Chưa có lời giải cho nguồn này.</p></ng-template>
-      <div class="correct-answer">Đáp án đúng: <b>{{ q.correctAnswers.join(', ') }}</b></div>
       <button class="btn outline edit-button" (click)="beginEdit()">✎ Chỉnh sửa giải thích</button>
     </div>
 
@@ -87,7 +89,7 @@
       <textarea rows="12" [ngModel]="explanationDraft()" (ngModelChange)="explanationDraft.set($event)"></textarea>
       <label>Ghi chú review<textarea rows="3" [ngModel]="explanationNotes()" (ngModelChange)="explanationNotes.set($event)"></textarea></label>
       <div class="editor-meta">Nguồn: <b>Manual</b> · Trạng thái: <b>Reviewed</b></div>
-      <div class="editor-actions"><button class="btn ghost" (click)="cancelEdit()">Hủy</button><button class="btn outline" [disabled]="savingExplanation()" (click)="saveExplanation(false)">Lưu</button><button class="btn primary" [disabled]="savingExplanation()" (click)="saveExplanation(true)">Lưu & đặt làm giải thích cuối cùng</button></div>
+      <div class="editor-actions"><button class="btn ghost" (click)="cancelEdit()">Hủy</button><button class="btn outline" [disabled]="savingExplanation()" (click)="saveExplanation(false)">Lưu</button><button class="btn primary" [disabled]="savingExplanation()" (click)="saveExplanation(true)">Lưu giải thích</button></div>
     </div>
     <div class="tip">💡 Bạn có thể tự cập nhật phần giải thích và dùng lại cho lần ôn sau.</div>
     <div class="save-message" *ngIf="saveMessage()">{{ saveMessage() }}</div>
