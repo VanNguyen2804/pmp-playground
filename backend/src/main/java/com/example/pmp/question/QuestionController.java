@@ -73,6 +73,14 @@ public class QuestionController {
                 .body(answerHistoryService.analytics(days, top, timeZone));
     }
 
+    @PostMapping("/practice/session-report")
+    public ResponseEntity<PracticeSessionReportResponse> practiceSessionReport(
+            @Valid @RequestBody PracticeSessionReportRequest request) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(answerHistoryService.sessionReport(request));
+    }
+
     @GetMapping("/practice/priority")
     public ResponseEntity<List<QuestionResponse>> priorityPracticeQuestions(
             @RequestParam(defaultValue = "20") int count,

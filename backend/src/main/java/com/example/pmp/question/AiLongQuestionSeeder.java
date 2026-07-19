@@ -26,6 +26,7 @@ public class AiLongQuestionSeeder implements ApplicationRunner {
     private static final String AI_CATEGORY_CODE = "TOPIC_AI";
     private static final String LONG_CATEGORY_CODE = "TOPIC_LONG_QUESTION";
     private static final String AI_PREFIX = "AI-PRACTICE-";
+    private static final String PMBOK8_AI_PREFIX = "AI-PMBOK8-";
     private static final String LONG_PREFIX = "LONG-CASE-";
     private static final int LONG_QUESTION_MINIMUM_CHARACTERS = 700;
 
@@ -45,6 +46,7 @@ public class AiLongQuestionSeeder implements ApplicationRunner {
 
         classifyExistingQuestions(aiCategory, longCategory);
         upsertQuestions(standaloneAiQuestions(), AI_PREFIX, "PMP AI Practice", aiCategory, null);
+        upsertQuestions(additionalPmbok8AiQuestions(), PMBOK8_AI_PREFIX, "PMBOK 8 AI Practice", aiCategory, null);
         upsertQuestions(longAiCaseQuestions(), LONG_PREFIX + "AI-", "PMP Long Case AI", aiCategory, longCategory);
         upsertQuestions(longGeneralCaseQuestions(), LONG_PREFIX + "GENERAL-", "PMP Long Case General", null, longCategory);
     }
@@ -80,7 +82,9 @@ public class AiLongQuestionSeeder implements ApplicationRunner {
 
     private boolean isCurated(Question question) {
         String id = question.getExternalId();
-        return id != null && (id.startsWith(AI_PREFIX) || id.startsWith(LONG_PREFIX));
+        return id != null && (id.startsWith(AI_PREFIX)
+                || id.startsWith(PMBOK8_AI_PREFIX)
+                || id.startsWith(LONG_PREFIX));
     }
 
     private String searchableText(Question question) {
@@ -305,6 +309,190 @@ public class AiLongQuestionSeeder implements ApplicationRunner {
                         1,
                         "AI-generated content can create copyright, licensing, confidentiality, and ownership questions. The team should follow policy and legal guidance, verify accuracy, protect confidential information, and obtain required approval.",
                         Difficulty.MEDIUM, responsibleAi, "ai,copyright,intellectual-property,confidentiality", "TOPIC_BUSINESS_COMPLIANCE")
+        );
+    }
+
+    private List<SeedQuestion> additionalPmbok8AiQuestions() {
+        String useCases = "PMBOK Guide 8th Edition, Appendix X3, Table X3-1: Primary AI Use Cases in Project Management";
+        String responsible = "PMBOK Guide 8th Edition, Appendix X3.3: Responsible Use and Ethical Concerns";
+        String adoption = "PMBOK Guide 8th Edition, Appendix X3.1: Strategies for AI Adoption";
+
+        return List.of(
+                q("A PMO uses AI to continuously compare actual progress with approved baselines and alert the project manager when deviations cross predefined thresholds. Which use of AI from PMBOK 8 is being applied?",
+                        List.of(
+                                "Real-time monitoring through automation",
+                                "Portfolio balancing through augmentation",
+                                "Risk register creation without human review",
+                                "Replacement of the project governance structure"),
+                        0,
+                        "PMBOK 8 identifies real-time monitoring as an automation use case. AI can continuously compare progress with baselines and generate alerts, while the project manager remains responsible for interpreting the alert and selecting an action.",
+                        Difficulty.EASY, useCases, "ai,pmbok8,automation,real-time-monitoring", "TOPIC_GOVERNANCE_CHANGE", "TOPIC_PROJECT_MANAGEMENT"),
+
+                q("Critical path analysis and the burndown chart appear normal, but an AI tool detects a pattern that preceded delays on similar projects. What should the project manager do next?",
+                        List.of(
+                                "Ignore the signal because the standard charts are green",
+                                "Validate the signal, investigate the assumptions and leading indicators, and assess whether preventive action is warranted",
+                                "Immediately replace the schedule baseline",
+                                "Allow the AI tool to authorize overtime"),
+                        1,
+                        "PMBOK 8 describes early warning signaling as an assistance use case. The signal should trigger human investigation and validation; it is not automatic evidence that a baseline change or corrective action is already approved.",
+                        Difficulty.MEDIUM, useCases, "ai,pmbok8,assistance,early-warning,schedule", "TOPIC_SCHEDULE", "TOPIC_RISK"),
+
+                q("A project team asks AI to explore trade-offs among scope, schedule, cost, and value before proposing a new baseline. How should the AI output be used?",
+                        List.of(
+                                "As an augmentation input to human trade-off analysis and governance approval",
+                                "As an automatically approved baseline",
+                                "As a replacement for stakeholder consultation",
+                                "As evidence that change control is unnecessary"),
+                        0,
+                        "Baseline optimization is an augmentation use case. AI can expand trade-off analysis, but accountable stakeholders must evaluate value, assumptions, constraints, and risks and follow the established change-governance process.",
+                        Difficulty.MEDIUM, useCases, "ai,pmbok8,augmentation,baseline-optimization", "TOPIC_GOVERNANCE_CHANGE", "TOPIC_COST_FINANCE", "TOPIC_SCOPE_REQUIREMENTS", "TOPIC_SCHEDULE"),
+
+                q("An internal AI chatbot answers routine questions about approved project status, milestones, and task ownership. What is the most important project management control?",
+                        List.of(
+                                "Give the chatbot access to every project document",
+                                "Use approved data sources, access controls, current information, and escalation to a human for uncertain or sensitive requests",
+                                "Let the chatbot create commitments on behalf of the sponsor",
+                                "Remove normal communication channels"),
+                        1,
+                        "AI chatbots can automate routine queries, but the implementation needs trusted sources, authorization boundaries, privacy controls, currency checks, and a human escalation path.",
+                        Difficulty.MEDIUM, useCases, "ai,pmbok8,automation,chatbot,privacy", "TOPIC_STAKEHOLDER_COMMUNICATION", "TOPIC_GOVERNANCE_CHANGE"),
+
+                q("An AI assistant transcribes a steering committee meeting and drafts the decisions and action items. Before the minutes become the official record, what should occur?",
+                        List.of(
+                                "An accountable person verifies accuracy, context, owners, sensitive content, and the approved audience",
+                                "The transcript is permanently published without review",
+                                "The AI tool asks itself whether the minutes are correct",
+                                "Every informal comment is converted into a project decision"),
+                        0,
+                        "Automated meeting minutes are a PMBOK 8 automation use case. Human verification is still needed because transcription can lose context, misstate decisions, expose sensitive data, or assign the wrong owner.",
+                        Difficulty.EASY, useCases, "ai,pmbok8,automation,meeting-minutes,human-review", "TOPIC_STAKEHOLDER_COMMUNICATION"),
+
+                q("A project manager uses AI to analyze historical project data and industry benchmarks to identify possible threats and estimate their probability and impact. Which statement is most accurate?",
+                        List.of(
+                                "This is an augmentation use case that enriches risk identification and assessment but still requires expert review",
+                                "The AI output becomes the approved risk register automatically",
+                                "Only risks found by AI should be retained",
+                                "The project manager no longer needs a risk owner"),
+                        0,
+                        "PMBOK 8 lists AI-supported risk identification and assessment as augmentation. The output broadens professional analysis; the team still validates relevance, probability, impact, ownership, response, and data limitations.",
+                        Difficulty.MEDIUM, useCases, "ai,pmbok8,augmentation,risk-identification", "TOPIC_RISK"),
+
+                q("A company allows AI to trigger a predefined low-impact risk response when an approved threshold is crossed. What is the best governance design?",
+                        List.of(
+                                "Define rules, authority limits, monitoring, auditability, exception handling, and human escalation",
+                                "Permit the AI to take any action it considers useful",
+                                "Remove the risk owner because the response is automated",
+                                "Hide the automation from affected stakeholders"),
+                        0,
+                        "Automated mitigation can be suitable for bounded, predefined actions. Governance should define permitted actions, thresholds, owners, logs, monitoring, exception handling, and conditions requiring human decision-making.",
+                        Difficulty.HARD, useCases, "ai,pmbok8,automation,risk-mitigation,governance", "TOPIC_RISK", "TOPIC_GOVERNANCE_CHANGE"),
+
+                q("A team member plans to upload customer records and confidential contract details to a free public generative AI tool to prepare a summary. What should the project manager do first?",
+                        List.of(
+                                "Proceed because summaries are low complexity",
+                                "Stop the upload and verify organizational AI policy, data classification, consent, privacy, security, and intellectual-property controls",
+                                "Remove customer names only and upload everything else",
+                                "Ask the AI provider to delete the data after generation"),
+                        1,
+                        "PMBOK 8 emphasizes privacy and the way AI providers handle user data. Sensitive or regulated information should not be submitted until approved policy, security, consent, retention, and intellectual-property controls are confirmed.",
+                        Difficulty.MEDIUM, responsible, "ai,pmbok8,privacy,confidentiality", "TOPIC_BUSINESS_COMPLIANCE", "TOPIC_PROCUREMENT"),
+
+                q("An AI model consistently recommends lower resource allocations for projects serving a particular geographic group. What is the best response?",
+                        List.of(
+                                "Accept the recommendation because the model is consistent",
+                                "Investigate bias, diversify relevant data, perform focused periodic tests, involve diverse teams, and correct and retest the model",
+                                "Exclude that geographic group from future analysis",
+                                "Lower the decision threshold for every project"),
+                        1,
+                        "PMBOK 8 recommends mitigating bias through diverse training data, periodic bias-focused testing, and involvement of different teams. The affected use should be controlled until the weakness is understood and corrected.",
+                        Difficulty.MEDIUM, responsible, "ai,pmbok8,bias,fairness", "TOPIC_RESOURCE_TEAM", "TOPIC_BUSINESS_COMPLIANCE", "TOPIC_QUALITY"),
+
+                q("An AI system ranks vendors, and the project team selects the top-ranked vendor. Who is ultimately accountable for the procurement decision?",
+                        List.of(
+                                "The AI model vendor",
+                                "The human decision-maker identified by the organization's governance and procurement authority",
+                                "No one, because the ranking was data driven",
+                                "The lowest-ranked bidder"),
+                        1,
+                        "PMBOK 8 states that a human should ultimately be accountable for decisions and that accountability must be clearly defined. AI can contribute analysis but cannot absorb organizational accountability.",
+                        Difficulty.EASY, responsible, "ai,pmbok8,accountability,vendor-selection", "TOPIC_PROCUREMENT", "TOPIC_GOVERNANCE_CHANGE"),
+
+                q("A generative AI tool produces different regulatory answers when the same question is phrased differently. What should the project manager do?",
+                        List.of(
+                                "Select the answer that best supports the current plan",
+                                "Treat the output as unreliable until it is validated against authoritative sources and reviewed by appropriate experts",
+                                "Average the answers",
+                                "Use the longest answer as the official interpretation"),
+                        1,
+                        "AI-generated information is not infallible. Reliability requires validation and cross-checking with trusted sources, especially for legal, regulatory, safety, or other high-impact decisions.",
+                        Difficulty.MEDIUM, responsible, "ai,pmbok8,reliability,regulation,validation", "TOPIC_BUSINESS_COMPLIANCE", "TOPIC_QUALITY"),
+
+                q("Stakeholders ask how an AI recommendation affected the project's resource-allocation decision. Which principle should guide the response?",
+                        List.of(
+                                "Transparency about relevant data, the role of the model, limitations, and the human decision process",
+                                "Refusal to explain because AI models are always confidential",
+                                "Disclosure of all personal data used by the system",
+                                "A statement that the AI made the final decision"),
+                        0,
+                        "Responsible AI includes transparency. Affected parties should receive appropriate information about data use, the AI contribution, limitations, and accountable human decision-making without exposing protected information.",
+                        Difficulty.MEDIUM, responsible, "ai,pmbok8,transparency,stakeholder", "TOPIC_STAKEHOLDER_COMMUNICATION", "TOPIC_GOVERNANCE_CHANGE"),
+
+                q("An AI scheduling recommendation would reduce duration but weakens a mandatory safety verification. What should the project manager do?",
+                        List.of(
+                                "Accept the recommendation because schedule value is measurable",
+                                "Reject or constrain the recommendation, involve safety and compliance experts, and preserve mandatory controls unless formally changed by authorized governance",
+                                "Ask AI to accept the safety risk",
+                                "Remove the safety criterion from the definition of done"),
+                        1,
+                        "AI use must be safe and governed. Mandatory safety and compliance controls cannot be traded away by an optimization tool; experts and authorized decision-makers must evaluate any proposed change.",
+                        Difficulty.HARD, responsible, "ai,pmbok8,safety,compliance,schedule", "TOPIC_BUSINESS_COMPLIANCE", "TOPIC_SCHEDULE", "TOPIC_QUALITY"),
+
+                q("A marketing project uses generative AI to draft campaign artwork and text. Before publishing the material, what should the team review?",
+                        List.of(
+                                "Only whether the content is visually attractive",
+                                "Copyright, ownership, training/output restrictions, licenses, attribution requirements, and the amount of human elaboration",
+                                "Whether the AI generated the content quickly",
+                                "Only the project's cost baseline"),
+                        1,
+                        "PMBOK 8 identifies copyright and ownership as responsible-AI considerations. The team should verify applicable law, licenses, organizational policy, provider terms, provenance, and required human contribution before use.",
+                        Difficulty.MEDIUM, responsible, "ai,pmbok8,copyright,ownership,marketing", "TOPIC_BUSINESS_COMPLIANCE", "TOPIC_GOVERNANCE_CHANGE"),
+
+                q("A project team submits thousands of unnecessary AI prompts for simple calculations that existing tools already perform accurately. Which PMBOK 8 consideration is most relevant?",
+                        List.of(
+                                "Sustainability and proportional use of computing resources",
+                                "Critical path compression",
+                                "Stakeholder salience",
+                                "Cost-reimbursable contracting"),
+                        0,
+                        "PMBOK 8 notes the energy and water resources consumed by AI systems. Teams should use AI where it provides sufficient value and avoid unnecessary use when simpler, reliable tools are adequate.",
+                        Difficulty.EASY, responsible, "ai,pmbok8,sustainability,resource-use", "TOPIC_BUSINESS_COMPLIANCE"),
+
+                q("A project manager is choosing between a public free AI service and an enterprise paid service for confidential project analysis. What difference should receive particular attention?",
+                        List.of(
+                                "How each service uses submitted data for model training, retention, privacy, and intellectual-property protection",
+                                "The color of the user interface",
+                                "The number of emojis produced",
+                                "Whether the service can replace project sponsorship"),
+                        0,
+                        "PMBOK 8 highlights that AI services can differ materially in their handling of user data. Enterprise controls may restrict retraining and improve privacy and intellectual-property protection, but the actual terms and organizational approval must be verified.",
+                        Difficulty.EASY, adoption, "ai,pmbok8,privacy,market,enterprise-tool", "TOPIC_PROCUREMENT", "TOPIC_BUSINESS_COMPLIANCE"),
+
+                q("An AI tool predicts project timelines, resource needs, and possible bottlenecks from historical and current project data. The project manager reviews and refines the output before planning. Which adoption level best describes this use?",
+                        List.of("Automation", "Assistance", "Augmentation", "Autonomous governance"),
+                        1,
+                        "Predictive analytics for planning is listed as assistance. AI complements analysis and creates an input that a project professional must review for accuracy, completeness, assumptions, and context.",
+                        Difficulty.EASY, useCases, "ai,pmbok8,assistance,predictive-analytics,planning", "TOPIC_SCHEDULE", "TOPIC_RESOURCE_TEAM"),
+
+                q("An AI-enhanced collaboration platform groups ideas from a large workshop and highlights recurring themes. What should the facilitator do next?",
+                        List.of(
+                                "Treat the highest-ranked theme as an approved decision",
+                                "Use the organized output to support inclusive discussion, validate context, and let authorized participants make the decision",
+                                "Delete ideas that the model ranks low",
+                                "End the workshop because AI has completed stakeholder engagement"),
+                        1,
+                        "AI collaborative platforms can assist by organizing contributions in real time. The facilitator should ensure contributions are represented fairly, validate context, and preserve human participation and decision authority.",
+                        Difficulty.MEDIUM, useCases, "ai,pmbok8,assistance,collaboration,brainstorming", "TOPIC_STAKEHOLDER_COMMUNICATION", "TOPIC_RESOURCE_TEAM")
         );
     }
 

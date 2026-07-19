@@ -27,7 +27,114 @@
 
 <section class="state-card" *ngIf="loading()">Đang tải câu hỏi...</section>
 <section class="state-card error" *ngIf="!loading() && error()">{{ error() }} <button class="btn primary" (click)="start()">Thử lại</button></section>
-<section class="state-card" *ngIf="finished()"><h2>Hoàn thành: {{ score() }}/{{ questions().length }}</h2><button class="btn primary" (click)="start()">Làm bộ khác</button></section>
+<section class="session-results" *ngIf="finished()">
+  <div class="session-results-header">
+    <div>
+      <span class="results-kicker">Kết quả bộ câu hỏi</span>
+      <h2>Hoàn thành {{ questions().length }} câu</h2>
+      <p>Biểu đồ chỉ dùng dữ liệu của bộ vừa làm. Gợi ý ôn tập được tạo theo category sai và cấu trúc PMBOK 8.</p>
+    </div>
+    <button class="btn primary" type="button" (click)="start()">Làm bộ khác</button>
+  </div>
+
+  <div class="session-report-state" *ngIf="sessionReportLoading()">Đang tổng hợp câu sai và tạo gợi ý PMBOK 8...</div>
+  <div class="session-report-state error" *ngIf="sessionReportError()">
+    {{ sessionReportError() }}
+    <button class="btn outline" type="button" (click)="reloadSessionReport()">Thử lại</button>
+  </div>
+
+  <ng-container *ngIf="sessionReport() as report">
+    <div class="session-summary-grid">
+      <article class="summary-score">
+        <span>Độ chính xác</span>
+        <strong>{{ report.summary.accuracyPercentage | number:'1.0-1' }}%</strong>
+        <small>{{ report.summary.correctAnswers }} đúng / {{ report.summary.answeredQuestions }} đã trả lời</small>
+      </article>
+      <article>
+        <span>Số câu sai</span>
+        <strong class="wrong-number">{{ report.summary.incorrectAnswers }}</strong>
+        <small>Trong bộ hiện tại</small>
+      </article>
+      <article>
+        <span>Chưa trả lời</span>
+        <strong>{{ report.summary.skippedQuestions }}</strong>
+        <small>{{ report.summary.totalQuestions }} câu được tải</small>
+      </article>
+      <article>
+        <span>Category cần ưu tiên</span>
+        <strong class="category-result-name">{{ report.suggestions[0]?.categoryName || 'Không có' }}</strong>
+        <small>{{ report.suggestions.length ? suggestionPriorityLabel(report.suggestions[0].priority) : 'Tất cả câu đã trả lời đều đúng' }}</small>
+      </article>
+    </div>
+
+    <div class="session-analysis-grid">
+      <article class="session-chart-card">
+        <div class="session-card-title">
+          <div>
+            <h3>Câu sai theo category</h3>
+            <p>Xếp hạng kiến thức cần ôn trong chính bộ câu hỏi vừa hoàn thành.</p>
+          </div>
+          <span>{{ report.summary.incorrectAnswers }} câu sai</span>
+        </div>
+
+        <div class="session-empty-success" *ngIf="sessionCategoryBars().length === 0">
+          <strong>✓ Không có category sai</strong>
+          <p>Bạn đã trả lời đúng toàn bộ câu đã làm trong session này.</p>
+        </div>
+
+        <div class="session-category-bars" *ngIf="sessionCategoryBars().length">
+          <div class="session-category-row" *ngFor="let item of sessionCategoryBars(); trackBy: trackSessionCategory">
+            <div class="session-category-label">
+              <span>{{ item.categoryName }}</span>
+              <b>{{ item.incorrectAnswers }} sai</b>
+            </div>
+            <div class="session-bar-track" role="img" [attr.aria-label]="item.categoryName + ': ' + item.incorrectAnswers + ' câu sai'">
+              <div class="session-bar-fill" [style.width.%]="item.widthPercentage"></div>
+            </div>
+            <div class="session-category-meta">
+              <span>{{ item.correctAnswers }}/{{ item.answeredQuestions }} đúng</span>
+              <span>Accuracy {{ item.accuracyPercentage | number:'1.0-1' }}%</span>
+            </div>
+          </div>
+        </div>
+        <p class="session-chart-note">Một câu có nhiều knowledge categories sẽ được tính vào từng category liên quan. Long Question và Chart là category định dạng nên không dùng để tạo suggestion.</p>
+      </article>
+
+      <article class="session-suggestion-card">
+        <div class="session-card-title">
+          <div>
+            <h3>Suggestion dựa trên PMBOK 8</h3>
+            <p>Tập trung vào category có lỗi sai nhiều nhất trước.</p>
+          </div>
+          <span>Top {{ report.suggestions.length }}</span>
+        </div>
+
+        <div class="session-empty-success" *ngIf="report.suggestions.length === 0">
+          <strong>Chưa cần suggestion sửa lỗi</strong>
+          <p>Tiếp tục luyện câu mới hoặc tăng độ khó.</p>
+        </div>
+
+        <div class="study-suggestions" *ngIf="report.suggestions.length">
+          <article class="study-suggestion" *ngFor="let suggestion of report.suggestions; trackBy: trackSuggestion"
+                   [class.high-priority]="suggestion.priority === 'HIGH'">
+            <div class="suggestion-heading">
+              <div>
+                <span class="priority-badge" [class.medium]="suggestion.priority === 'MEDIUM'">{{ suggestionPriorityLabel(suggestion.priority) }}</span>
+                <h4>{{ suggestion.categoryName }}</h4>
+              </div>
+            </div>
+            <p class="pmbok-reference">{{ suggestion.pmbokReference }}</p>
+            <ul>
+              <li *ngFor="let focus of suggestion.focusAreas">{{ focus }}</li>
+            </ul>
+            <div class="decision-rule"><strong>Decision rule:</strong> {{ suggestion.decisionRule }}</div>
+            <div class="practice-action"><strong>Cách ôn:</strong> {{ suggestion.recommendedPractice }}</div>
+          </article>
+        </div>
+      </article>
+    </div>
+  </ng-container>
+</section>
 
 <section class="practice-layout" *ngIf="!loading() && !finished() && current() as q">
   <div class="left-column">

@@ -24,13 +24,16 @@ public class QuestionAnswerHistoryService {
     private final QuestionRepository questionRepository;
     private final QuestionAnswerAttemptRepository attemptRepository;
     private final ObjectMapper objectMapper;
+    private final Pmbok8StudyRecommendationService recommendationService;
 
     public QuestionAnswerHistoryService(QuestionRepository questionRepository,
                                         QuestionAnswerAttemptRepository attemptRepository,
-                                        ObjectMapper objectMapper) {
+                                        ObjectMapper objectMapper,
+                                        Pmbok8StudyRecommendationService recommendationService) {
         this.questionRepository = questionRepository;
         this.attemptRepository = attemptRepository;
         this.objectMapper = objectMapper;
+        this.recommendationService = recommendationService;
     }
 
     public AnswerAttemptResponse submit(Long questionId, AnswerAttemptRequest request) {
@@ -209,6 +212,77 @@ public class QuestionAnswerHistoryService {
     }
 
     @Transactional(readOnly = true)
+    public PracticeSessionReportResponse sessionReport(PracticeSessionReportRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Session report request is required.");
+        }
+        String sessionId = blankToNull(request.sessionId());
+        if (sessionId == null) {
+            throw new IllegalArgumentException("Session ID is required.");
+        }
+
+        LinkedHashSet<Long> requestedIds = request.questionIds().stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (requestedIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one question ID is required.");
+        }
+
+        Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
+        for (QuestionAnswerAttempt attempt : attemptRepository.findBySessionIdOrderByAnsweredAtDescIdDesc(sessionId)) {
+            Long questionId = attempt.getQuestion().getId();
+            if (requestedIds.contains(questionId)) {
+                latestByQuestion.putIfAbsent(questionId, attempt);
+            }
+        }
+
+        long answered = latestByQuestion.size();
+        long correct = latestByQuestion.values().stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        long incorrect = answered - correct;
+        PracticeSessionSummary summary = new PracticeSessionSummary(
+                requestedIds.size(),
+                answered,
+                Math.max(0, requestedIds.size() - answered),
+                correct,
+                incorrect,
+                percentage(correct, answered)
+        );
+
+        Map<String, SessionCategoryAccumulator> categoryMap = new LinkedHashMap<>();
+        for (QuestionAnswerAttempt attempt : latestByQuestion.values()) {
+            List<com.example.pmp.category.Category> knowledgeCategories = attempt.getQuestion().getCategories().stream()
+                    .filter(com.example.pmp.category.Category::isActive)
+                    .filter(category -> !isFormatOnlyCategory(category.getCode()))
+                    .toList();
+            if (knowledgeCategories.isEmpty()) {
+                categoryMap.computeIfAbsent("UNCATEGORIZED",
+                                ignored -> new SessionCategoryAccumulator("UNCATEGORIZED", "Chưa phân loại"))
+                        .accept(attempt);
+            } else {
+                knowledgeCategories.forEach(category -> categoryMap
+                        .computeIfAbsent(category.getCode(),
+                                ignored -> new SessionCategoryAccumulator(category.getCode(), category.getName()))
+                        .accept(attempt));
+            }
+        }
+
+        List<PracticeSessionCategoryResult> categoryResults = categoryMap.values().stream()
+                .map(SessionCategoryAccumulator::toRecord)
+                .sorted(Comparator.comparingLong(PracticeSessionCategoryResult::incorrectAnswers).reversed()
+                        .thenComparingDouble(PracticeSessionCategoryResult::accuracyPercentage)
+                        .thenComparing(PracticeSessionCategoryResult::categoryName))
+                .toList();
+
+        return new PracticeSessionReportResponse(
+                Instant.now(),
+                sessionId,
+                summary,
+                categoryResults,
+                recommendationService.suggestionsFor(categoryResults)
+        );
+    }
+
+    @Transactional(readOnly = true)
     public WrongQuestionReviewResponse wrongQuestions(String categoryCode, int minIncorrect, int count, boolean shuffle) {
         List<QuestionAnswerAttempt> all = attemptRepository.findAllByOrderByAnsweredAtDescIdDesc();
         Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
@@ -278,6 +352,47 @@ public class QuestionAnswerHistoryService {
             }
         }
         return "Không xác định";
+    }
+
+    private boolean isFormatOnlyCategory(String code) {
+        return "TOPIC_LONG_QUESTION".equalsIgnoreCase(code)
+                || "TOPIC_CHART".equalsIgnoreCase(code);
+    }
+
+    private final class SessionCategoryAccumulator {
+        private final String code;
+        private final String name;
+        private long answered;
+        private long correct;
+        private long incorrect;
+        private final Set<Long> wrongQuestionIds = new LinkedHashSet<>();
+
+        private SessionCategoryAccumulator(String code, String name) {
+            this.code = code;
+            this.name = name;
+        }
+
+        private void accept(QuestionAnswerAttempt attempt) {
+            answered++;
+            if (attempt.isCorrect()) {
+                correct++;
+            } else {
+                incorrect++;
+                wrongQuestionIds.add(attempt.getQuestion().getId());
+            }
+        }
+
+        private PracticeSessionCategoryResult toRecord() {
+            return new PracticeSessionCategoryResult(
+                    code,
+                    name,
+                    answered,
+                    correct,
+                    incorrect,
+                    percentage(correct, answered),
+                    List.copyOf(wrongQuestionIds)
+            );
+        }
     }
 
     private final class CategoryAccumulator {

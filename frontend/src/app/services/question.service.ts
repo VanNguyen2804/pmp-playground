@@ -2,7 +2,7 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeAnalytics, PracticeDashboard, WrongQuestionReviewResponse, StudyAnnotation, StudyAnnotationRequest } from '../models/question';
+import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeAnalytics, PracticeDashboard, PracticeSessionReport, WrongQuestionReviewResponse, StudyAnnotation, StudyAnnotationRequest } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -88,6 +88,13 @@ export class QuestionService {
 
   practiceDashboard(): Observable<PracticeDashboard> {
     return this.http.get<PracticeDashboard>(`${this.questionsUrl}/practice/dashboard`);
+  }
+
+  practiceSessionReport(sessionId: string, questionIds: number[]): Observable<PracticeSessionReport> {
+    return this.http.post<PracticeSessionReport>(`${this.questionsUrl}/practice/session-report`, {
+      sessionId,
+      questionIds
+    });
   }
 
   practiceAnalytics(days = 14, top = 10): Observable<PracticeAnalytics> {

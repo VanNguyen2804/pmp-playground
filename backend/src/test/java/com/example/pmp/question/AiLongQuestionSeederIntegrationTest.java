@@ -22,13 +22,17 @@ class AiLongQuestionSeederIntegrationTest {
 
         assertThat(ai.isActive()).isTrue();
         assertThat(longQuestion.isActive()).isTrue();
-        assertThat(questionRepository.countByCategories_Id(ai.getId())).isGreaterThanOrEqualTo(18);
+        assertThat(questionRepository.countByCategories_Id(ai.getId())).isGreaterThanOrEqualTo(36);
         assertThat(questionRepository.countByCategories_Id(longQuestion.getId())).isGreaterThanOrEqualTo(12);
 
         Question aiQuestion = questionRepository.findByExternalId("AI-PRACTICE-0001").orElseThrow();
         assertThat(aiQuestion.getOptions()).hasSize(4);
         assertThat(aiQuestion.getOptions()).anyMatch(QuestionOption::isCorrect);
         assertThat(aiQuestion.getFinalExplanation()).isNotBlank();
+
+        Question pmbok8AiQuestion = questionRepository.findByExternalId("AI-PMBOK8-0001").orElseThrow();
+        assertThat(pmbok8AiQuestion.getReference()).contains("PMBOK Guide 8th Edition");
+        assertThat(pmbok8AiQuestion.getFinalExplanation()).isNotBlank();
 
         Question longQuestionItem = questionRepository.findByExternalId("LONG-CASE-AI-0001").orElseThrow();
         assertThat(longQuestionItem.getQuestionText()).contains("CASE 1");

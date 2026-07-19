@@ -2,6 +2,7 @@ package com.example.pmp.question;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,9 @@ public interface QuestionAnswerAttemptRepository extends JpaRepository<QuestionA
     Optional<QuestionAnswerAttempt> findTopByQuestion_IdOrderByAnsweredAtDescIdDesc(Long questionId);
     List<QuestionAnswerAttempt> findAllByOrderByAnsweredAtDescIdDesc();
     List<QuestionAnswerAttempt> findByAnsweredAtGreaterThanEqualOrderByAnsweredAtDescIdDesc(Instant from);
+
+    @EntityGraph(attributePaths = {"question", "question.categories"})
+    List<QuestionAnswerAttempt> findBySessionIdOrderByAnsweredAtDescIdDesc(String sessionId);
 
     @Query("""
             select a.question.id as questionId,

@@ -7,6 +7,7 @@ import {
   AnswerHistorySummary,
   CategorySummary,
   PracticeDashboard,
+  PracticeSessionReport,
   Question,
   StudyAnnotation,
   StudyHighlight,
@@ -73,6 +74,9 @@ export class Practice implements OnInit, OnDestroy {
   readonly explanationDraft = signal('');
   readonly explanationNotes = signal('');
   readonly saveMessage = signal('');
+  readonly sessionReport = signal<PracticeSessionReport | null>(null);
+  readonly sessionReportLoading = signal(false);
+  readonly sessionReportError = signal('');
 
   readonly annotations = signal<Record<number, StudyAnnotation>>({});
   readonly annotationLoading = signal(false);
@@ -131,10 +135,22 @@ export class Practice implements OnInit, OnDestroy {
     return 'Không xác định';
   });
 
+  readonly sessionCategoryBars = computed(() => {
+    const rows = this.sessionReport()?.categoryResults
+      ?.filter(item => item.incorrectAnswers > 0)
+      .slice(0, 10) ?? [];
+    const maximum = Math.max(0, ...rows.map(item => item.incorrectAnswers));
+    return rows.map(item => ({
+      ...item,
+      widthPercentage: maximum === 0 ? 0 : Math.max(6, item.incorrectAnswers * 100 / maximum)
+    }));
+  });
+
   private loadSubscription?: Subscription;
   private answerSubscription?: Subscription;
   private historySubscription?: Subscription;
   private annotationLoadSubscription?: Subscription;
+  private sessionReportSubscription?: Subscription;
   private readonly annotationSaveSubscriptions = new Map<number, Subscription>();
   private readonly annotationSaveTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private readonly annotationRevisions = new Map<number, number>();
@@ -162,6 +178,7 @@ export class Practice implements OnInit, OnDestroy {
     this.answerSubscription?.unsubscribe();
     this.historySubscription?.unsubscribe();
     this.annotationLoadSubscription?.unsubscribe();
+    this.sessionReportSubscription?.unsubscribe();
     this.annotationSaveSubscriptions.forEach(subscription => subscription.unsubscribe());
     this.annotationSaveTimers.forEach(timer => clearTimeout(timer));
   }
@@ -193,6 +210,10 @@ export class Practice implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set('');
     this.finished.set(false);
+    this.sessionReport.set(null);
+    this.sessionReportError.set('');
+    this.sessionReportLoading.set(false);
+    this.sessionReportSubscription?.unsubscribe();
     this.sessionId.set(this.createSessionId());
 
     if (this.wrongOnly()) {
@@ -257,7 +278,7 @@ export class Practice implements OnInit, OnDestroy {
 
   next(): void {
     if (this.index() + 1 >= this.questions().length) {
-      this.finished.set(true);
+      this.finishSession();
       return;
     }
     this.index.update(value => value + 1);
@@ -421,6 +442,26 @@ export class Practice implements OnInit, OnDestroy {
     });
   }
 
+  reloadSessionReport(): void {
+    this.loadSessionReport();
+  }
+
+  suggestionPriorityLabel(priority: string): string {
+    switch (priority) {
+      case 'HIGH': return 'Ưu tiên cao';
+      case 'MEDIUM': return 'Cần củng cố';
+      default: return 'Ôn lại';
+    }
+  }
+
+  trackSessionCategory(_: number, item: { categoryCode: string }): string {
+    return item.categoryCode;
+  }
+
+  trackSuggestion(_: number, item: { categoryCode: string }): string {
+    return item.categoryCode;
+  }
+
   shouldShowQuestionImage(question: Question): boolean {
     const imageUrl = question.imageUrl?.trim();
     if (!imageUrl) return false;
@@ -432,6 +473,38 @@ export class Practice implements OnInit, OnDestroy {
 
   trackCategory(_: number, category: CategorySummary): number | string { return category.id ?? category.code; }
   trackSegment(index: number, segment: TextSegment): string { return segment.highlight?.id ?? `plain-${index}-${segment.text.length}`; }
+
+  private finishSession(): void {
+    this.finished.set(true);
+    this.loadSessionReport();
+  }
+
+  private loadSessionReport(): void {
+    const questionIds = this.questions()
+      .map(question => question.id)
+      .filter((id): id is number => !!id);
+    if (!questionIds.length) {
+      this.sessionReportError.set('Không có dữ liệu câu hỏi để tạo báo cáo.');
+      return;
+    }
+
+    this.sessionReportSubscription?.unsubscribe();
+    this.sessionReportLoading.set(true);
+    this.sessionReportError.set('');
+    this.sessionReportSubscription = this.service
+      .practiceSessionReport(this.sessionId(), questionIds)
+      .pipe(take(1))
+      .subscribe({
+        next: report => {
+          this.sessionReport.set(report);
+          this.sessionReportLoading.set(false);
+        },
+        error: () => {
+          this.sessionReportError.set('Không tải được biểu đồ và gợi ý ôn tập. Hãy thử lại.');
+          this.sessionReportLoading.set(false);
+        }
+      });
+  }
 
   private acceptQuestions(version: number, questions: Question[], total: number): void {
     if (version !== this.requestVersion) return;

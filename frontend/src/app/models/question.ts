@@ -206,6 +206,46 @@ export interface PracticeAnalytics {
   topWrongQuestions: TopWrongQuestionStatistic[];
 }
 
+
+export interface PracticeSessionSummary {
+  totalQuestions: number;
+  answeredQuestions: number;
+  skippedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracyPercentage: number;
+}
+
+export interface PracticeSessionCategoryResult {
+  categoryCode: string;
+  categoryName: string;
+  answeredQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracyPercentage: number;
+  wrongQuestionIds: number[];
+}
+
+export type StudySuggestionPriority = 'HIGH' | 'MEDIUM' | 'REVIEW';
+
+export interface CategoryStudySuggestion {
+  categoryCode: string;
+  categoryName: string;
+  priority: StudySuggestionPriority;
+  pmbokReference: string;
+  focusAreas: string[];
+  decisionRule: string;
+  recommendedPractice: string;
+}
+
+export interface PracticeSessionReport {
+  generatedAt: string;
+  sessionId: string;
+  summary: PracticeSessionSummary;
+  categoryResults: PracticeSessionCategoryResult[];
+  suggestions: CategoryStudySuggestion[];
+}
+
 export type StudyHighlightTarget = 'QUESTION' | 'OPTION';
 export type StudyHighlightColor = 'YELLOW' | 'GREEN' | 'BLUE' | 'PINK';
 
