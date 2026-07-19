@@ -476,6 +476,7 @@ export class Practice implements OnInit, OnDestroy {
 
   private finishSession(): void {
     this.finished.set(true);
+    this.scrollToSessionResults();
     this.loadSessionReport();
   }
 
@@ -498,12 +499,19 @@ export class Practice implements OnInit, OnDestroy {
         next: report => {
           this.sessionReport.set(report);
           this.sessionReportLoading.set(false);
+          this.scrollToSessionResults();
         },
         error: () => {
           this.sessionReportError.set('Không tải được biểu đồ và gợi ý ôn tập. Hãy thử lại.');
           this.sessionReportLoading.set(false);
         }
       });
+  }
+
+  private scrollToSessionResults(): void {
+    setTimeout(() => {
+      document.querySelector('.session-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   }
 
   private acceptQuestions(version: number, questions: Question[], total: number): void {
