@@ -71,6 +71,13 @@ export class QuestionService {
     return this.http.post<ReclassificationResult>(`${this.questionsUrl}/reclassify`, {});
   }
 
+  priorityPracticeQuestions(count = 20, categoryCode?: string, questionType?: QuestionType): Observable<Question[]> {
+    let params = new HttpParams().set('count', String(count));
+    if (categoryCode?.trim()) params = params.set('categoryCode', categoryCode.trim());
+    if (questionType) params = params.set('questionType', questionType);
+    return this.http.get<Question[]>(`${this.questionsUrl}/practice/priority`, { params });
+  }
+
   random(count = 10, categoryCode?: string, questionType?: QuestionType): Observable<Question[]> {
     let params = new HttpParams().set('count', String(count));
     if (categoryCode?.trim()) params = params.set('categoryCode', categoryCode.trim());

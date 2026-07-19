@@ -51,7 +51,7 @@ export class Practice implements OnInit, OnDestroy {
   readonly score = signal(0);
   readonly finished = signal(false);
   readonly categoryCode = signal('');
-  readonly wrongOnly = signal(true);
+  readonly wrongOnly = signal(false);
   readonly minIncorrect = signal(1);
   readonly shuffle = signal(true);
   readonly loading = signal(false);
@@ -208,7 +208,7 @@ export class Practice implements OnInit, OnDestroy {
       return;
     }
 
-    this.loadSubscription = this.service.random(20, this.categoryCode()).pipe(take(1)).subscribe({
+    this.loadSubscription = this.service.priorityPracticeQuestions(20, this.categoryCode()).pipe(take(1)).subscribe({
       next: questions => this.acceptQuestions(version, questions ?? [], questions?.length ?? 0),
       error: () => this.failLoad(version)
     });
@@ -419,6 +419,15 @@ export class Practice implements OnInit, OnDestroy {
         this.saveMessage.set('Không lưu được giải thích.');
       }
     });
+  }
+
+  shouldShowQuestionImage(question: Question): boolean {
+    const imageUrl = question.imageUrl?.trim();
+    if (!imageUrl) return false;
+    if (!imageUrl.startsWith('/chart-guides/')) return true;
+    return question.categories?.some(category => category.code === 'TOPIC_CHART')
+      || question.categoryCodes?.includes('TOPIC_CHART')
+      || false;
   }
 
   trackCategory(_: number, category: CategorySummary): number | string { return category.id ?? category.code; }

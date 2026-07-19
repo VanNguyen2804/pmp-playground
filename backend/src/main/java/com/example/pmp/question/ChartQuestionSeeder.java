@@ -52,11 +52,23 @@ public class ChartQuestionSeeder implements ApplicationRunner {
             }
             String searchable = searchableText(question);
             String asset = chartAsset(searchable);
+            boolean modified = false;
             if (asset == null) {
+                // Earlier versions used a broad "chart" substring match. This caused
+                // words such as "charter" to receive the generic chart illustration.
+                // Remove only that legacy auto-generated image/category combination.
+                if (asset("master-reference").equals(question.getImageUrl())) {
+                    question.setImageUrl(null);
+                    question.getCategories().remove(chartCategory);
+                    modified = true;
+                }
+                if (modified) {
+                    changed.add(question);
+                }
                 continue;
             }
-            boolean modified = question.getCategories().add(chartCategory);
-            if (isBlank(question.getImageUrl())) {
+            modified = question.getCategories().add(chartCategory);
+            if (isBlank(question.getImageUrl()) || asset("master-reference").equals(question.getImageUrl())) {
                 question.setImageUrl(asset);
                 modified = true;
             }
@@ -160,7 +172,6 @@ public class ChartQuestionSeeder implements ApplicationRunner {
         if (containsAny(text, "raci matrix", "responsible accountable consulted informed")) return asset("raci");
         if (containsAny(text, "task board", "kanban board")) return asset("kanban");
         if (containsAny(text, "flowchart", "flow chart", "process map")) return asset("flowchart");
-        if (containsAny(text, "chart", "diagram")) return asset("master-reference");
         return null;
     }
 
@@ -241,7 +252,25 @@ public class ChartQuestionSeeder implements ApplicationRunner {
                         "A Kanban or task board visualizes workflow, such as To Do, In Progress, and Done. WIP limits support flow and expose bottlenecks.", Difficulty.EASY, toolsRef, "TOPIC_AGILE_HYBRID"),
                 q("flowchart", "A quality team needs to understand decision points, rework loops, and handoffs in an existing process. Which visual tool should it create first?",
                         List.of("Flowchart or process map", "Velocity chart", "Power-interest grid", "Tornado diagram"), 0,
-                        "A flowchart or process map represents the sequence of steps and decisions. It helps the team see handoffs, delays, rework loops, and improvement opportunities.", Difficulty.EASY, toolsRef, "TOPIC_QUALITY")
+                        "A flowchart or process map represents the sequence of steps and decisions. It helps the team see handoffs, delays, rework loops, and improvement opportunities.", Difficulty.EASY, toolsRef, "TOPIC_QUALITY"),
+                q("critical-path-calculation", "The network diagram contains three paths: Start-A-C-Finish = 12 days, Start-B-D-Finish = 15 days, and Start-B-E-Finish = 10 days. Which path is critical?",
+                        List.of("Start-A-C-Finish", "Start-B-D-Finish", "Start-B-E-Finish", "All paths are critical"), 1,
+                        "The critical path is the longest-duration path through the network. Start-B-D-Finish takes 15 days, so it controls the earliest possible completion date and normally has zero total float.", Difficulty.MEDIUM, "PMBOK Guide 8th Edition, Schedule Performance Domain and Critical Path Method", "TOPIC_SCHEDULE"),
+                q("critical-path-float", "An activity on a noncritical path has an early start of day 6 and a late start of day 9. What is its total float?",
+                        List.of("0 days", "3 days", "6 days", "15 days"), 1,
+                        "Total float can be calculated as LS - ES or LF - EF. Here, 9 - 6 = 3 days. Delaying the activity by more than three days may affect the project completion date.", Difficulty.MEDIUM, "PMBOK Guide 8th Edition, Schedule Performance Domain and Critical Path Method", "TOPIC_SCHEDULE"),
+                q("critical-path-compression", "A project must finish five days earlier. After analyzing the network, the project manager decides to add resources. Which activities should be considered first for crashing?",
+                        List.of("The cheapest activities anywhere in the schedule", "Activities on the critical path with the best cost-time trade-off", "Only activities with the greatest free float", "All activities equally"), 1,
+                        "Crashing shortens duration by adding resources at additional cost. It should focus on critical-path activities that can actually be shortened and offer the most favorable incremental cost per unit of time saved.", Difficulty.HARD, "PMBOK Guide 8th Edition, Schedule Compression and Critical Path Method", "TOPIC_SCHEDULE", "TOPIC_COST_FINANCE"),
+                q("cpi-spi-status", "A project has CPI = 0.82 and SPI = 1.10. What does this indicate?",
+                        List.of("Under budget and behind schedule", "Over budget and ahead of schedule", "Over budget and behind schedule", "Under budget and ahead of schedule"), 1,
+                        "CPI below 1.0 means the project is receiving less earned value than the cost spent, so it is over budget. SPI above 1.0 means earned value is greater than planned value, so the project is ahead of schedule.", Difficulty.EASY, "PMBOK Guide 8th Edition, Earned Value Calculations Summary", "TOPIC_COST_FINANCE"),
+                q("cpi-spi-calculation", "At the status date, EV is 90, PV is 100, and AC is 120. What are the CPI and SPI?",
+                        List.of("CPI 0.75 and SPI 0.90", "CPI 0.90 and SPI 0.75", "CPI 1.33 and SPI 1.11", "CPI 1.11 and SPI 1.33"), 0,
+                        "CPI = EV / AC = 90 / 120 = 0.75. SPI = EV / PV = 90 / 100 = 0.90. Both indices are below 1.0, so the project is over budget and behind schedule.", Difficulty.MEDIUM, "PMBOK Guide 8th Edition, Earned Value Calculations Summary", "TOPIC_COST_FINANCE"),
+                q("cpi-spi-response", "Variance analysis shows CPI = 0.90 and SPI = 1.20. What should the project manager do next?",
+                        List.of("Reduce scope immediately", "Crash the schedule", "Analyze the cause of the cost variance", "Release a developer immediately"), 2,
+                        "The project is over budget but ahead of schedule. Before selecting a corrective action, the project manager should isolate and understand the cost variance, determine whether it is temporary or recurring, and update forecasts as appropriate.", Difficulty.MEDIUM, "PMBOK Guide 8th Edition, Monitor and Control Finances", "TOPIC_COST_FINANCE")
         );
     }
 

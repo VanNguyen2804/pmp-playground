@@ -20,15 +20,18 @@ public class QuestionController {
     private final QuestionCsvExportService csvExportService;
     private final QuestionAnswerHistoryService answerHistoryService;
     private final QuestionStudyAnnotationService studyAnnotationService;
+    private final PracticeQuestionSelectionService practiceQuestionSelectionService;
 
     public QuestionController(QuestionService service,
                               QuestionCsvExportService csvExportService,
                               QuestionAnswerHistoryService answerHistoryService,
-                              QuestionStudyAnnotationService studyAnnotationService) {
+                              QuestionStudyAnnotationService studyAnnotationService,
+                              PracticeQuestionSelectionService practiceQuestionSelectionService) {
         this.service = service;
         this.csvExportService = csvExportService;
         this.answerHistoryService = answerHistoryService;
         this.studyAnnotationService = studyAnnotationService;
+        this.practiceQuestionSelectionService = practiceQuestionSelectionService;
     }
 
     @GetMapping
@@ -68,6 +71,16 @@ public class QuestionController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(answerHistoryService.analytics(days, top, timeZone));
+    }
+
+    @GetMapping("/practice/priority")
+    public ResponseEntity<List<QuestionResponse>> priorityPracticeQuestions(
+            @RequestParam(defaultValue = "20") int count,
+            @RequestParam(required = false) String categoryCode,
+            @RequestParam(required = false) QuestionType questionType) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(practiceQuestionSelectionService.selectPriorityQuestions(count, categoryCode, questionType));
     }
 
     @GetMapping("/review/wrong")

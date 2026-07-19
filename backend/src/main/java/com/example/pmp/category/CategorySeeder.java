@@ -26,6 +26,10 @@ public class CategorySeeder implements ApplicationRunner {
                 .forEach(category -> category.setActive(false));
 
         List<Seed> seeds = List.of(
+                new Seed("TOPIC_LONG_QUESTION", "Long Question",
+                        "Long case-based PMP questions. Several questions may share the same scenario so learners can practice locating the decision trigger without rereading every detail.", 2),
+                new Seed("TOPIC_AI", "AI",
+                        "Practical artificial intelligence and generative AI scenarios, including project use cases, human oversight, privacy, bias, reliability, accountability and responsible adoption.", 3),
                 new Seed("TOPIC_CHART", "Chart",
                         "PMP charts, diagrams, matrices and visual tools used to analyze quality, schedule, risk, cost, agile flow and stakeholder information.", 5),
                 new Seed("TOPIC_PROJECT_MANAGEMENT", "Project Management",

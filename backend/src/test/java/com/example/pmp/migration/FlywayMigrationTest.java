@@ -37,7 +37,7 @@ class FlywayMigrationTest {
         );
 
         assertThat(migrationCount).isGreaterThanOrEqualTo(6);
-        assertThat(categoryCount).isEqualTo(14);
+        assertThat(categoryCount).isEqualTo(17);
         assertThat(historyTableCount).isEqualTo(1);
     }
 }

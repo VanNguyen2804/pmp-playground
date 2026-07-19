@@ -2,7 +2,6 @@
   <article class="metric-card danger"><div class="metric-icon">×</div><div><span>Câu sai cần ôn lại</span><strong>{{ dashboard().wrongQuestions }}</strong></div></article>
   <article class="metric-card success"><div class="metric-icon">↗</div><div><span>Độ chính xác tuần này</span><strong>{{ dashboard().weeklyAccuracyPercentage | number:'1.0-1' }}%</strong><small>{{ dashboard().weeklyCorrectAttempts }}/{{ dashboard().weeklyTotalAttempts }} lượt</small></div></article>
   <article class="metric-card warning"><div class="metric-icon">♨</div><div><span>Chuỗi đúng liên tiếp</span><strong>{{ dashboard().currentCorrectStreak }}</strong><small>câu</small></div></article>
-  <article class="metric-card info"><div class="metric-icon">▣</div><div><span>Hôm nay cần ôn</span><strong>{{ dashboard().dueToday }}</strong><small>câu</small></div></article>
 </section>
 
 <section class="practice-heading">
@@ -21,6 +20,9 @@
     <option *ngFor="let category of categories(); trackBy: trackCategory" [value]="category.code">{{ category.name }}</option>
   </select>
   <label class="check-label"><input type="checkbox" [ngModel]="shuffle()" (ngModelChange)="onShuffleChange($event)"> Trộn ngẫu nhiên</label>
+  <div class="priority-hint" *ngIf="!wrongOnly()">
+    <strong>Ưu tiên thông minh:</strong> câu đang sai và câu chưa làm xuất hiện thường xuyên hơn; câu đã đúng từ 5 lần xuất hiện ít hơn.
+  </div>
 </section>
 
 <section class="state-card" *ngIf="loading()">Đang tải câu hỏi...</section>
@@ -69,7 +71,7 @@
           <ng-template #plainQuestion>{{ segment.text }}</ng-template>
         </ng-container>
       </h2>
-      <img *ngIf="q.imageUrl" class="question-image" [src]="q.imageUrl" alt="Question illustration">
+      <img *ngIf="shouldShowQuestionImage(q)" class="question-image" [src]="q.imageUrl!" alt="Question illustration">
 
       <ng-container *ngIf="q.questionType !== 'MATCHING'">
         <button class="option" *ngFor="let option of q.options"
