@@ -9,5 +9,6 @@ export const routes: Routes = [
   { path: 'categories', loadComponent: () => import('./pages/categories/categories').then(m => m.Categories) },
   { path: 'import', loadComponent: () => import('./pages/import-questions/import-questions').then(m => m.ImportQuestions) },
   { path: 'practice', loadComponent: () => import('./pages/practice/practice').then(m => m.Practice) },
+  { path: 'analytics', loadComponent: () => import('./pages/analytics/analytics').then(m => m.Analytics) },
   { path: '**', redirectTo: 'practice' }
 ];
