@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+<title id="title">Burndown chart</title><desc id="desc">Remaining work should trend toward zero</desc>
+<rect width="900" height="420" rx="24" fill="#f8fafc"/>
+<rect x="1" y="1" width="898" height="418" rx="23" fill="none" stroke="#dbeafe" stroke-width="2"/>
+<text x="42" y="50" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a">Burndown chart</text>
+<text x="42" y="78" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Remaining work should trend toward zero</text>
+<line x1="90" y1="350" x2="840" y2="350" stroke="#64748b" stroke-width="2"/><line x1="90" y1="350" x2="90" y2="110" stroke="#64748b" stroke-width="2"/><line x1="110" y1="125" x2="810" y2="350" stroke="#94a3b8" stroke-width="3" stroke-dasharray="10 8"/><polyline points="110,125 180,145 250,175 320,170 390,220 460,245 530,240 600,285 670,310 740,330 810,350" fill="none" stroke="#2563eb" stroke-width="5"/><text x="620" y="195" font-family="Arial" font-size="14" fill="#1d4ed8">Remaining work</text><text x="390" y="392" font-family="Arial" font-size="14" fill="#475569">Iteration time</text>
+</svg>

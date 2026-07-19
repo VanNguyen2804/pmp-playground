@@ -26,6 +26,8 @@ public class CategorySeeder implements ApplicationRunner {
                 .forEach(category -> category.setActive(false));
 
         List<Seed> seeds = List.of(
+                new Seed("TOPIC_CHART", "Chart",
+                        "PMP charts, diagrams, matrices and visual tools used to analyze quality, schedule, risk, cost, agile flow and stakeholder information.", 5),
                 new Seed("TOPIC_PROJECT_MANAGEMENT", "Project Management",
                         "Project context, project charter, integration, planning, execution, monitoring, value delivery and general management decisions.", 10),
                 new Seed("TOPIC_AGILE_HYBRID", "Agile & Hybrid",

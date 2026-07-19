@@ -228,3 +228,7 @@ Trang **Ngân hàng câu hỏi PMP** có nút **Xuất toàn bộ CSV**. Backend
 ## Practice answer history
 
 The root page opens `/practice`. Each submitted answer is evaluated and saved by the backend in `question_answer_attempts`. See `docs/ANSWER_HISTORY.md` for the endpoints and Flyway migration.
+
+## Chart category and visual question bank
+
+The active PMP taxonomy includes a `Chart` category (`TOPIC_CHART`). On startup, the backend assigns existing chart/diagram questions to this category and idempotently maintains a 20-question visual practice bank. Select **Chart** in the `/exam` category filter to load the combined set. Illustrations are stored in `frontend/public/chart-guides` and are served locally with the frontend.

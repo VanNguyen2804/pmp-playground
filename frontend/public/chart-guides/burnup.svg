@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+<title id="title">Burnup chart</title><desc id="desc">Show completed work and make scope change visible</desc>
+<rect width="900" height="420" rx="24" fill="#f8fafc"/>
+<rect x="1" y="1" width="898" height="418" rx="23" fill="none" stroke="#dbeafe" stroke-width="2"/>
+<text x="42" y="50" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a">Burnup chart</text>
+<text x="42" y="78" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Show completed work and make scope change visible</text>
+<line x1="90" y1="350" x2="840" y2="350" stroke="#64748b" stroke-width="2"/><line x1="90" y1="350" x2="90" y2="110" stroke="#64748b" stroke-width="2"/><polyline points="110,335 180,320 250,285 320,270 390,230 460,205 530,180 600,155 670,130 740,115 810,105" fill="none" stroke="#16a34a" stroke-width="5"/><polyline points="110,140 350,140 350,120 590,120 590,100 810,100" fill="none" stroke="#f97316" stroke-width="4" stroke-dasharray="10 7"/><text x="660" y="135" font-family="Arial" font-size="14" fill="#15803d">Completed work</text><text x="650" y="88" font-family="Arial" font-size="14" fill="#c2410c">Total scope</text>
+</svg>

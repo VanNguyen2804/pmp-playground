@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+<title id="title">Cumulative flow diagram</title><desc id="desc">Watch WIP bands for bottlenecks and flow stability</desc>
+<rect width="900" height="420" rx="24" fill="#f8fafc"/>
+<rect x="1" y="1" width="898" height="418" rx="23" fill="none" stroke="#dbeafe" stroke-width="2"/>
+<text x="42" y="50" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a">Cumulative flow diagram</text>
+<text x="42" y="78" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Watch WIP bands for bottlenecks and flow stability</text>
+<line x1="90" y1="350" x2="840" y2="350" stroke="#64748b" stroke-width="2"/><line x1="90" y1="350" x2="90" y2="110" stroke="#64748b" stroke-width="2"/><path d="M110 350 L110 320 C260 300 420 280 810 250 L810 350 Z" fill="#bfdbfe" opacity="0.9"/><path d="M110 320 C260 300 420 280 810 250 L810 210 C600 210 380 245 110 280 Z" fill="#93c5fd" opacity="0.9"/><path d="M110 280 C380 245 600 210 810 210 L810 150 C600 155 380 210 110 250 Z" fill="#60a5fa" opacity="0.9"/><path d="M110 250 C380 210 600 155 810 150 L810 100 C600 120 380 175 110 225 Z" fill="#2563eb" opacity="0.9"/><text x="690" y="315" font-family="Arial" font-size="13" fill="#1e3a8a">Done</text><text x="690" y="235" font-family="Arial" font-size="13" fill="#1e3a8a">Testing</text><text x="690" y="180" font-family="Arial" font-size="13" fill="#1e3a8a">In progress</text><text x="690" y="125" font-family="Arial" font-size="13" fill="#fff">To do</text>
+</svg>

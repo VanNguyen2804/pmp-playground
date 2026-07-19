@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+<title id="title">Histogram</title><desc id="desc">See frequency, spread, skew and unusual patterns</desc>
+<rect width="900" height="420" rx="24" fill="#f8fafc"/>
+<rect x="1" y="1" width="898" height="418" rx="23" fill="none" stroke="#dbeafe" stroke-width="2"/>
+<text x="42" y="50" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a">Histogram</text>
+<text x="42" y="78" font-family="Arial, sans-serif" font-size="14" fill="#64748b">See frequency, spread, skew and unusual patterns</text>
+<line x1="90" y1="350" x2="840" y2="350" stroke="#64748b" stroke-width="2"/><line x1="90" y1="350" x2="90" y2="110" stroke="#64748b" stroke-width="2"/><rect x="125" y="315" width="90" height="35" fill="#0ea5e9" opacity="0.85"/><rect x="217" y="280" width="90" height="70" fill="#0ea5e9" opacity="0.85"/><rect x="309" y="225" width="90" height="125" fill="#0ea5e9" opacity="0.85"/><rect x="401" y="160" width="90" height="190" fill="#0ea5e9" opacity="0.85"/><rect x="493" y="190" width="90" height="160" fill="#0ea5e9" opacity="0.85"/><rect x="585" y="250" width="90" height="100" fill="#0ea5e9" opacity="0.85"/><rect x="677" y="300" width="90" height="50" fill="#0ea5e9" opacity="0.85"/><text x="390" y="392" font-family="Arial" font-size="14" fill="#475569">Measurement ranges</text><text x="110" y="118" font-family="Arial" font-size="14" fill="#334155">Frequency</text>
+</svg>

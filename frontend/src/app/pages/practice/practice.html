@@ -6,22 +6,21 @@
 </section>
 
 <section class="practice-heading">
-  <div><h1>Luyện tập lại câu hỏi sai</h1><p>Ôn lại những câu đã trả lời sai để củng cố kiến thức và cải thiện điểm số.</p></div>
+  <div><h1>Luyện tập</h1><p>Luyện câu hỏi theo bộ lọc để củng cố kiến thức và cải thiện điểm số.</p></div>
 </section>
 
 <section class="filter-bar">
-  <label class="switch-label">Chỉ câu sai <input type="checkbox" [ngModel]="wrongOnly()" (ngModelChange)="wrongOnly.set($event)"><span class="switch"></span></label>
-  <select [ngModel]="minIncorrect()" (ngModelChange)="minIncorrect.set(+$event)">
+  <label class="switch-label">Chỉ câu sai <input type="checkbox" [ngModel]="wrongOnly()" (ngModelChange)="onWrongOnlyChange($event)"><span class="switch"></span></label>
+  <select [ngModel]="minIncorrect()" (ngModelChange)="onMinIncorrectChange($event)">
     <option [value]="1">Chưa ôn lại</option>
     <option [value]="2">Sai từ 2 lần trở lên</option>
     <option [value]="3">Sai từ 3 lần trở lên</option>
   </select>
-  <select [ngModel]="categoryCode()" (ngModelChange)="categoryCode.set($event)">
+  <select [ngModel]="categoryCode()" (ngModelChange)="onCategoryChange($event)">
     <option value="">Theo category</option>
     <option *ngFor="let category of categories(); trackBy: trackCategory" [value]="category.code">{{ category.name }}</option>
   </select>
-  <label class="check-label"><input type="checkbox" [ngModel]="shuffle()" (ngModelChange)="shuffle.set($event)"> Trộn ngẫu nhiên</label>
-  <button class="btn primary" (click)="start()">▶ Bắt đầu làm lại</button>
+  <label class="check-label"><input type="checkbox" [ngModel]="shuffle()" (ngModelChange)="onShuffleChange($event)"> Trộn ngẫu nhiên</label>
 </section>
 
 <section class="state-card" *ngIf="loading()">Đang tải câu hỏi...</section>

@@ -106,6 +106,26 @@ export class Practice implements OnInit, OnDestroy {
     this.historySubscription?.unsubscribe();
   }
 
+  onWrongOnlyChange(value: boolean): void {
+    this.wrongOnly.set(value);
+    this.start();
+  }
+
+  onMinIncorrectChange(value: string | number): void {
+    this.minIncorrect.set(Number(value));
+    this.start();
+  }
+
+  onCategoryChange(value: string): void {
+    this.categoryCode.set(value ?? '');
+    this.start();
+  }
+
+  onShuffleChange(value: boolean): void {
+    this.shuffle.set(value);
+    this.start();
+  }
+
   start(): void {
     this.loadSubscription?.unsubscribe();
     this.answerSubscription?.unsubscribe();

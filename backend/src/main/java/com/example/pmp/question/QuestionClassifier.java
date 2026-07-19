@@ -13,6 +13,13 @@ public class QuestionClassifier {
     private static final Map<String, List<String>> TOPIC_KEYWORDS = new LinkedHashMap<>();
 
     static {
+        TOPIC_KEYWORDS.put("TOPIC_CHART", List.of(
+                "chart", "diagram", "matrix", "histogram", "pareto", "control chart", "run chart",
+                "scatter diagram", "scatter plot", "fishbone", "ishikawa", "cause and effect diagram",
+                "gantt", "milestone chart", "network diagram", "precedence diagram", "s curve", "s-curve",
+                "burndown", "burnup", "cumulative flow", "velocity chart", "task board", "kanban board",
+                "tornado diagram", "decision tree", "probability impact matrix", "power interest grid",
+                "stakeholder cube", "raci matrix", "flowchart", "flow chart", "check sheet"));
         TOPIC_KEYWORDS.put("TOPIC_AGILE_HYBRID", List.of(
                 "agile", "scrum", "kanban", "extreme programming", " xp ", "hybrid", "adaptive",
                 "iteration", "sprint", "backlog", "product owner", "scrum master", "velocity",
