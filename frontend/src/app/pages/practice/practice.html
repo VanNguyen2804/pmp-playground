@@ -35,7 +35,40 @@
         <span class="category-chip">{{ q.categories?.[0]?.name || 'PMP' }}</span>
         <span class="wrong-chip" *ngIf="historySummary()?.incorrectAttempts">Sai {{ historySummary()?.incorrectAttempts }} lần</span>
       </div>
-      <h2>{{ q.questionText }}</h2>
+
+      <div class="study-toolbar">
+        <div class="highlight-help">
+          <strong>Highlight keyword</strong>
+          <span>Bôi đen chữ trong câu hỏi hoặc đáp án, rồi chọn màu. Bấm highlight cũ để đổi màu.</span>
+        </div>
+        <div class="highlight-actions">
+          <button class="color-button yellow" type="button" title="Highlight vàng" (click)="applyHighlightColor('YELLOW')"></button>
+          <button class="color-button green" type="button" title="Highlight xanh lá" (click)="applyHighlightColor('GREEN')"></button>
+          <button class="color-button blue" type="button" title="Highlight xanh dương" (click)="applyHighlightColor('BLUE')"></button>
+          <button class="color-button pink" type="button" title="Highlight hồng" (click)="applyHighlightColor('PINK')"></button>
+          <button class="toolbar-button danger-button" type="button" [disabled]="!activeHighlightId()" (click)="removeActiveHighlight()">Xóa highlight</button>
+          <button class="toolbar-button note-button" type="button" (click)="openNotes()">📝 Ghi chú <span class="note-dot" *ngIf="hasNote()"></span></button>
+        </div>
+      </div>
+      <div class="annotation-status" *ngIf="annotationLoading() || annotationMessage() || currentAnnotationSaving()">
+        <span *ngIf="annotationLoading()">Đang tải highlight và ghi chú...</span>
+        <span *ngIf="!annotationLoading() && currentAnnotationSaving()">Đang tự lưu...</span>
+        <span *ngIf="!annotationLoading() && !currentAnnotationSaving() && annotationMessage()">{{ annotationMessage() }}</span>
+      </div>
+
+      <h2 class="highlightable-text question-text" (mouseup)="captureSelection('QUESTION', null, $event)">
+        <ng-container *ngFor="let segment of questionSegments(); let i = index; trackBy: trackSegment">
+          <mark *ngIf="segment.highlight as highlight; else plainQuestion"
+                class="study-highlight"
+                [class.highlight-yellow]="highlight.color === 'YELLOW'"
+                [class.highlight-green]="highlight.color === 'GREEN'"
+                [class.highlight-blue]="highlight.color === 'BLUE'"
+                [class.highlight-pink]="highlight.color === 'PINK'"
+                [class.active-highlight]="activeHighlightId() === highlight.id"
+                (click)="activateHighlight(highlight, $event)">{{ segment.text }}</mark>
+          <ng-template #plainQuestion>{{ segment.text }}</ng-template>
+        </ng-container>
+      </h2>
       <img *ngIf="q.imageUrl" class="question-image" [src]="q.imageUrl" alt="Question illustration">
 
       <ng-container *ngIf="q.questionType !== 'MATCHING'">
@@ -44,7 +77,20 @@
           [class.correct]="revealed() && option.correct"
           [class.wrong]="revealed() && selected()[option.key] && !option.correct"
           (click)="toggle(option.key)">
-          <span class="radio">{{ option.key }}</span><span>{{ option.text }}</span>
+          <span class="radio">{{ option.key }}</span>
+          <span class="option-text highlightable-text" (mouseup)="captureSelection('OPTION', option.key, $event)">
+            <ng-container *ngFor="let segment of optionSegments(option.key); let i = index; trackBy: trackSegment">
+              <mark *ngIf="segment.highlight as highlight; else plainOption"
+                    class="study-highlight"
+                    [class.highlight-yellow]="highlight.color === 'YELLOW'"
+                    [class.highlight-green]="highlight.color === 'GREEN'"
+                    [class.highlight-blue]="highlight.color === 'BLUE'"
+                    [class.highlight-pink]="highlight.color === 'PINK'"
+                    [class.active-highlight]="activeHighlightId() === highlight.id"
+                    (click)="activateHighlight(highlight, $event)">{{ segment.text }}</mark>
+              <ng-template #plainOption>{{ segment.text }}</ng-template>
+            </ng-container>
+          </span>
         </button>
       </ng-container>
 
@@ -77,6 +123,10 @@
       <div><span>Bài thi PMA</span><strong>{{ pmaExamName() }}</strong></div>
       <div><span>Câu số</span><strong>{{ pmaQuestionNumber() }}</strong></div>
     </div>
+    <div class="saved-note-preview" *ngIf="hasNote()">
+      <div><strong>Ghi chú của bạn</strong><button type="button" (click)="openNotes()">Xem / sửa</button></div>
+      <p>{{ currentAnnotation().note }}</p>
+    </div>
     <div class="explanation-body" *ngIf="!editingExplanation()">
       <p *ngIf="currentExplanation(); else noExplanation">{{ currentExplanation() }}</p>
       <ng-template #noExplanation><p class="muted">Chưa có lời giải cho nguồn này.</p></ng-template>
@@ -90,9 +140,26 @@
       <div class="editor-meta">Nguồn: <b>Manual</b> · Trạng thái: <b>Reviewed</b></div>
       <div class="editor-actions"><button class="btn ghost" (click)="cancelEdit()">Hủy</button><button class="btn outline" [disabled]="savingExplanation()" (click)="saveExplanation(false)">Lưu</button><button class="btn primary" [disabled]="savingExplanation()" (click)="saveExplanation(true)">Lưu giải thích</button></div>
     </div>
-    <div class="tip">💡 Bạn có thể tự cập nhật phần giải thích và dùng lại cho lần ôn sau.</div>
+    <div class="tip">💡 Highlight và ghi chú được lưu theo từng câu, nên vẫn còn sau khi tải lại trang.</div>
     <div class="save-message" *ngIf="saveMessage()">{{ saveMessage() }}</div>
   </aside>
 </section>
 
 <section class="state-card" *ngIf="!loading() && !finished() && questions().length === 0">Không có câu sai phù hợp với bộ lọc. Tắt “Chỉ câu sai” để luyện câu ngẫu nhiên.</section>
+
+<div class="note-backdrop" *ngIf="noteOpen()" (click)="closeNotes()">
+  <section class="note-dialog" role="dialog" aria-modal="true" aria-labelledby="note-title" (click)="$event.stopPropagation()">
+    <div class="note-dialog-header">
+      <div><h3 id="note-title">Ghi chú cho câu hỏi</h3><p>{{ pmaExamName() }} · Câu {{ pmaQuestionNumber() }}</p></div>
+      <button type="button" class="close-note" aria-label="Đóng" (click)="closeNotes()">×</button>
+    </div>
+    <textarea rows="12" maxlength="20000" placeholder="Ghi lại keyword, lý do chọn sai, PMP mindset hoặc điểm cần nhớ..." [ngModel]="noteDraft()" (ngModelChange)="noteDraft.set($event)"></textarea>
+    <div class="note-counter">{{ noteDraft().length | number }} / 20.000 ký tự</div>
+    <div class="note-dialog-actions">
+      <button class="btn ghost" type="button" *ngIf="hasNote()" (click)="deleteNote()">Xóa ghi chú</button>
+      <span class="dialog-spacer"></span>
+      <button class="btn ghost" type="button" (click)="closeNotes()">Hủy</button>
+      <button class="btn primary" type="button" (click)="saveNote()">Lưu ghi chú</button>
+    </div>
+  </section>
+</div>

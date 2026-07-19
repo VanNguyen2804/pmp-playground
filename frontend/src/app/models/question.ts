@@ -205,3 +205,29 @@ export interface PracticeAnalytics {
   dailyTrend: DailyAccuracyStatistic[];
   topWrongQuestions: TopWrongQuestionStatistic[];
 }
+
+export type StudyHighlightTarget = 'QUESTION' | 'OPTION';
+export type StudyHighlightColor = 'YELLOW' | 'GREEN' | 'BLUE' | 'PINK';
+
+export interface StudyHighlight {
+  id: string;
+  target: StudyHighlightTarget;
+  targetKey?: string | null;
+  startOffset: number;
+  endOffset: number;
+  text: string;
+  color: StudyHighlightColor;
+}
+
+export interface StudyAnnotation {
+  questionId: number;
+  note?: string | null;
+  highlights: StudyHighlight[];
+  version: number;
+  updatedAt?: string | null;
+}
+
+export interface StudyAnnotationRequest {
+  note?: string | null;
+  highlights: StudyHighlight[];
+}

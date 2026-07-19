@@ -1,15 +1,32 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, take } from 'rxjs';
+import { Subscription, finalize, forkJoin, take } from 'rxjs';
 import {
   AnswerAttemptResponse,
   AnswerHistorySummary,
   CategorySummary,
   PracticeDashboard,
-  Question
+  Question,
+  StudyAnnotation,
+  StudyHighlight,
+  StudyHighlightColor,
+  StudyHighlightTarget
 } from '../../models/question';
 import { QuestionService } from '../../services/question.service';
+
+interface TextSegment {
+  text: string;
+  highlight?: StudyHighlight;
+}
+
+interface PendingTextSelection {
+  target: StudyHighlightTarget;
+  targetKey?: string | null;
+  startOffset: number;
+  endOffset: number;
+  text: string;
+}
 
 @Component({
   selector: 'app-practice',
@@ -56,6 +73,16 @@ export class Practice implements OnInit, OnDestroy {
   readonly explanationDraft = signal('');
   readonly explanationNotes = signal('');
   readonly saveMessage = signal('');
+
+  readonly annotations = signal<Record<number, StudyAnnotation>>({});
+  readonly annotationLoading = signal(false);
+  readonly annotationSavingIds = signal<Set<number>>(new Set());
+  readonly annotationMessage = signal('');
+  readonly pendingSelection = signal<PendingTextSelection | null>(null);
+  readonly activeHighlightId = signal<string | null>(null);
+  readonly noteOpen = signal(false);
+  readonly noteDraft = signal('');
+
   readonly current = computed(() => this.questions()[this.index()]);
   readonly currentExplanation = computed(() => {
     const question = this.current();
@@ -64,6 +91,31 @@ export class Practice implements OnInit, OnDestroy {
       || question.aiExplanation?.trim()
       || question.pmaExplanation?.trim()
       || '';
+  });
+
+  readonly currentAnnotation = computed<StudyAnnotation>(() => {
+    const questionId = this.current()?.id;
+    if (!questionId) return this.emptyAnnotation(0);
+    return this.annotations()[questionId] ?? this.emptyAnnotation(questionId);
+  });
+
+  readonly currentAnnotationSaving = computed(() => {
+    const questionId = this.current()?.id;
+    return !!questionId && this.annotationSavingIds().has(questionId);
+  });
+
+  readonly hasNote = computed(() => !!this.currentAnnotation().note?.trim());
+  readonly questionSegments = computed(() => {
+    const question = this.current();
+    return question ? this.buildSegments('QUESTION', null, question.questionText) : [];
+  });
+  readonly optionSegmentsByKey = computed<Record<string, TextSegment[]>>(() => {
+    const question = this.current();
+    if (!question) return {};
+    return Object.fromEntries(question.options.map(option => [
+      option.key,
+      this.buildSegments('OPTION', option.key, option.text)
+    ]));
   });
 
   readonly pmaExamName = computed(() => {
@@ -82,6 +134,11 @@ export class Practice implements OnInit, OnDestroy {
   private loadSubscription?: Subscription;
   private answerSubscription?: Subscription;
   private historySubscription?: Subscription;
+  private annotationLoadSubscription?: Subscription;
+  private readonly annotationSaveSubscriptions = new Map<number, Subscription>();
+  private readonly annotationSaveTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  private readonly annotationRevisions = new Map<number, number>();
+  private readonly annotationDirtyQuestions = new Set<number>();
   private requestVersion = 0;
 
   constructor(private readonly service: QuestionService) {}
@@ -104,6 +161,9 @@ export class Practice implements OnInit, OnDestroy {
     this.loadSubscription?.unsubscribe();
     this.answerSubscription?.unsubscribe();
     this.historySubscription?.unsubscribe();
+    this.annotationLoadSubscription?.unsubscribe();
+    this.annotationSaveSubscriptions.forEach(subscription => subscription.unsubscribe());
+    this.annotationSaveTimers.forEach(timer => clearTimeout(timer));
   }
 
   onWrongOnlyChange(value: boolean): void {
@@ -155,6 +215,7 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   toggle(key: string): void {
+    if (window.getSelection()?.toString().trim()) return;
     if (this.revealed() || this.submittingAnswer()) return;
     if (this.current()?.questionType === 'MCQ') {
       this.selected.set({ [key]: true });
@@ -214,6 +275,113 @@ export class Practice implements OnInit, OnDestroy {
     return Object.values(this.selected()).some(Boolean);
   }
 
+  optionSegments(key: string): TextSegment[] {
+    return this.optionSegmentsByKey()[key] ?? [];
+  }
+
+  captureSelection(target: StudyHighlightTarget, targetKey: string | null, event: MouseEvent): void {
+    const root = event.currentTarget as HTMLElement | null;
+    const selection = window.getSelection();
+    if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+    const range = selection.getRangeAt(0);
+    if (!root.contains(range.commonAncestorContainer)) return;
+
+    const startOffset = this.offsetWithin(root, range.startContainer, range.startOffset);
+    const endOffset = this.offsetWithin(root, range.endContainer, range.endOffset);
+    const sourceText = this.sourceText(target, targetKey);
+    if (startOffset < 0 || endOffset <= startOffset || endOffset > sourceText.length) return;
+    const selectedText = sourceText.substring(startOffset, endOffset);
+    if (!selectedText.trim()) return;
+
+    this.pendingSelection.set({ target, targetKey, startOffset, endOffset, text: selectedText });
+    this.activeHighlightId.set(null);
+    this.annotationMessage.set(`Đã chọn: “${selectedText.trim().slice(0, 80)}${selectedText.trim().length > 80 ? '…' : ''}”`);
+  }
+
+  activateHighlight(highlight: StudyHighlight, event: MouseEvent): void {
+    if (window.getSelection()?.toString().trim()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+    this.pendingSelection.set(null);
+    this.activeHighlightId.set(highlight.id);
+    this.annotationMessage.set('Đã chọn highlight. Chọn màu khác để đổi màu hoặc bấm Xóa.');
+  }
+
+  applyHighlightColor(color: StudyHighlightColor): void {
+    const questionId = this.current()?.id;
+    if (!questionId) return;
+    const current = this.currentAnnotation();
+    const activeId = this.activeHighlightId();
+    let highlights: StudyHighlight[];
+
+    if (activeId) {
+      highlights = current.highlights.map(item => item.id === activeId ? { ...item, color } : item);
+    } else {
+      const selection = this.pendingSelection();
+      if (!selection) {
+        this.annotationMessage.set('Hãy bôi đen một keyword trong câu hỏi hoặc đáp án trước.');
+        return;
+      }
+      const created: StudyHighlight = {
+        id: this.createHighlightId(),
+        target: selection.target,
+        targetKey: selection.targetKey ?? null,
+        startOffset: selection.startOffset,
+        endOffset: selection.endOffset,
+        text: selection.text,
+        color
+      };
+      highlights = current.highlights
+        .filter(item => !this.overlaps(item, created))
+        .concat(created);
+    }
+
+    this.updateAnnotation(questionId, { ...current, highlights });
+    this.clearTextSelection();
+    this.annotationMessage.set('Đã cập nhật highlight. Hệ thống đang tự lưu.');
+  }
+
+  removeActiveHighlight(): void {
+    const questionId = this.current()?.id;
+    const activeId = this.activeHighlightId();
+    if (!questionId || !activeId) return;
+    const current = this.currentAnnotation();
+    this.updateAnnotation(questionId, {
+      ...current,
+      highlights: current.highlights.filter(item => item.id !== activeId)
+    });
+    this.clearTextSelection();
+    this.annotationMessage.set('Đã xóa highlight. Hệ thống đang tự lưu.');
+  }
+
+  clearTextSelection(): void {
+    window.getSelection()?.removeAllRanges();
+    this.pendingSelection.set(null);
+    this.activeHighlightId.set(null);
+  }
+
+  openNotes(): void {
+    this.noteDraft.set(this.currentAnnotation().note ?? '');
+    this.noteOpen.set(true);
+  }
+
+  closeNotes(): void { this.noteOpen.set(false); }
+
+  saveNote(): void {
+    const questionId = this.current()?.id;
+    if (!questionId) return;
+    const current = this.currentAnnotation();
+    this.updateAnnotation(questionId, { ...current, note: this.noteDraft().trim() || null }, 0);
+    this.noteOpen.set(false);
+    this.annotationMessage.set('Đã cập nhật ghi chú. Hệ thống đang tự lưu.');
+  }
+
+  deleteNote(): void {
+    this.noteDraft.set('');
+    this.saveNote();
+  }
+
   beginEdit(): void {
     const question = this.current();
     if (!question) return;
@@ -254,6 +422,7 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   trackCategory(_: number, category: CategorySummary): number | string { return category.id ?? category.code; }
+  trackSegment(index: number, segment: TextSegment): string { return segment.highlight?.id ?? `plain-${index}-${segment.text.length}`; }
 
   private acceptQuestions(version: number, questions: Question[], total: number): void {
     if (version !== this.requestVersion) return;
@@ -263,6 +432,7 @@ export class Practice implements OnInit, OnDestroy {
     this.score.set(0);
     this.prepare();
     this.loading.set(false);
+    this.loadStudyAnnotations(questions);
   }
 
   private failLoad(version: number): void {
@@ -279,6 +449,9 @@ export class Practice implements OnInit, OnDestroy {
     this.answerError.set('');
     this.editingExplanation.set(false);
     this.saveMessage.set('');
+    this.annotationMessage.set('');
+    this.noteOpen.set(false);
+    this.clearTextSelection();
     const question = this.current();
     this.matchingChoices.set(question?.questionType === 'MATCHING'
       ? [...question.matchingPairs.map(pair => pair.right)].sort(() => Math.random() - 0.5)
@@ -302,12 +475,158 @@ export class Practice implements OnInit, OnDestroy {
     });
   }
 
+  private loadStudyAnnotations(questions: Question[]): void {
+    const ids = questions.map(question => question.id).filter((id): id is number => !!id);
+    if (!ids.length) return;
+    this.annotationLoadSubscription?.unsubscribe();
+    this.annotationLoading.set(true);
+    this.annotationLoadSubscription = this.service.studyAnnotations(ids).pipe(take(1)).subscribe({
+      next: annotations => {
+        this.annotations.update(current => ({
+          ...current,
+          ...Object.fromEntries(annotations.map(annotation => [annotation.questionId, annotation]))
+        }));
+        this.annotationLoading.set(false);
+      },
+      error: () => {
+        this.annotationLoading.set(false);
+        this.annotationMessage.set('Không tải được highlight và ghi chú đã lưu.');
+      }
+    });
+  }
+
+  private updateAnnotation(questionId: number, annotation: StudyAnnotation, delay = 350): void {
+    this.annotations.update(current => ({ ...current, [questionId]: annotation }));
+    this.annotationRevisions.set(questionId, (this.annotationRevisions.get(questionId) ?? 0) + 1);
+    this.queueAnnotationSave(questionId, delay);
+  }
+
+  private queueAnnotationSave(questionId: number, delay: number): void {
+    const existing = this.annotationSaveTimers.get(questionId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.annotationSaveTimers.delete(questionId);
+      this.persistAnnotation(questionId);
+    }, delay);
+    this.annotationSaveTimers.set(questionId, timer);
+  }
+
+  private persistAnnotation(questionId: number): void {
+    if (this.annotationSavingIds().has(questionId)) {
+      this.annotationDirtyQuestions.add(questionId);
+      return;
+    }
+    const annotation = this.annotations()[questionId];
+    if (!annotation) return;
+    const snapshotRevision = this.annotationRevisions.get(questionId) ?? 0;
+    this.setAnnotationSaving(questionId, true);
+
+    const subscription = this.service.saveStudyAnnotation(questionId, {
+      note: annotation.note ?? null,
+      highlights: annotation.highlights
+    }).pipe(
+      take(1),
+      finalize(() => {
+        this.setAnnotationSaving(questionId, false);
+        this.annotationSaveSubscriptions.delete(questionId);
+        const latestRevision = this.annotationRevisions.get(questionId) ?? 0;
+        if (this.annotationDirtyQuestions.delete(questionId) || latestRevision !== snapshotRevision) {
+          this.queueAnnotationSave(questionId, 0);
+        }
+      })
+    ).subscribe({
+      next: saved => {
+        const latestRevision = this.annotationRevisions.get(questionId) ?? 0;
+        this.annotations.update(current => {
+          const latest = current[questionId] ?? saved;
+          return {
+            ...current,
+            [questionId]: latestRevision === snapshotRevision
+              ? saved
+              : { ...latest, version: saved.version, updatedAt: saved.updatedAt }
+          };
+        });
+        if (this.current()?.id === questionId && latestRevision === snapshotRevision) {
+          this.annotationMessage.set('Highlight và ghi chú đã được lưu.');
+        }
+      },
+      error: () => {
+        if (this.current()?.id === questionId) {
+          this.annotationMessage.set('Không lưu được highlight/ghi chú. Dữ liệu vẫn được giữ trên màn hình để thử lại.');
+        }
+      }
+    });
+    this.annotationSaveSubscriptions.set(questionId, subscription);
+  }
+
+  private setAnnotationSaving(questionId: number, saving: boolean): void {
+    this.annotationSavingIds.update(current => {
+      const next = new Set(current);
+      if (saving) next.add(questionId); else next.delete(questionId);
+      return next;
+    });
+  }
+
+  private buildSegments(target: StudyHighlightTarget, targetKey: string | null, text: string): TextSegment[] {
+    const highlights = this.currentAnnotation().highlights
+      .filter(item => item.target === target && (item.targetKey ?? null) === targetKey)
+      .filter(item => item.startOffset >= 0 && item.endOffset <= text.length && item.endOffset > item.startOffset)
+      .sort((a, b) => a.startOffset - b.startOffset);
+    if (!highlights.length) return [{ text }];
+
+    const segments: TextSegment[] = [];
+    let cursor = 0;
+    for (const highlight of highlights) {
+      if (highlight.startOffset < cursor) continue;
+      if (highlight.startOffset > cursor) segments.push({ text: text.slice(cursor, highlight.startOffset) });
+      segments.push({ text: text.slice(highlight.startOffset, highlight.endOffset), highlight });
+      cursor = highlight.endOffset;
+    }
+    if (cursor < text.length) segments.push({ text: text.slice(cursor) });
+    return segments;
+  }
+
+  private sourceText(target: StudyHighlightTarget, targetKey: string | null): string {
+    const question = this.current();
+    if (!question) return '';
+    if (target === 'QUESTION') return question.questionText;
+    return question.options.find(option => option.key === targetKey)?.text ?? '';
+  }
+
+  private offsetWithin(root: HTMLElement, node: Node, offset: number): number {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(root);
+      range.setEnd(node, offset);
+      return range.toString().length;
+    } catch {
+      return -1;
+    }
+  }
+
+  private overlaps(left: StudyHighlight, right: StudyHighlight): boolean {
+    return left.target === right.target
+      && (left.targetKey ?? null) === (right.targetKey ?? null)
+      && left.startOffset < right.endOffset
+      && right.startOffset < left.endOffset;
+  }
+
+  private emptyAnnotation(questionId: number): StudyAnnotation {
+    return { questionId, note: null, highlights: [], version: 0, updatedAt: null };
+  }
+
   private refreshDashboard(): void {
     this.service.practiceDashboard().pipe(take(1)).subscribe({ next: value => this.dashboard.set(value) });
   }
 
   private selectedAnswerKeys(): string[] {
     return Object.keys(this.selected()).filter(key => this.selected()[key]);
+  }
+
+  private createHighlightId(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `highlight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
   private createSessionId(): string {

@@ -19,13 +19,16 @@ public class QuestionController {
     private final QuestionService service;
     private final QuestionCsvExportService csvExportService;
     private final QuestionAnswerHistoryService answerHistoryService;
+    private final QuestionStudyAnnotationService studyAnnotationService;
 
     public QuestionController(QuestionService service,
                               QuestionCsvExportService csvExportService,
-                              QuestionAnswerHistoryService answerHistoryService) {
+                              QuestionAnswerHistoryService answerHistoryService,
+                              QuestionStudyAnnotationService studyAnnotationService) {
         this.service = service;
         this.csvExportService = csvExportService;
         this.answerHistoryService = answerHistoryService;
+        this.studyAnnotationService = studyAnnotationService;
     }
 
     @GetMapping
@@ -94,6 +97,24 @@ public class QuestionController {
     @GetMapping("/{id}/attempts/summary")
     public AnswerHistorySummary answerHistorySummary(@PathVariable Long id) {
         return answerHistoryService.summary(id);
+    }
+
+    @PostMapping("/study-annotations/batch")
+    public List<StudyAnnotationResponse> studyAnnotations(@RequestBody StudyAnnotationBatchRequest request) {
+        return studyAnnotationService.batch(request);
+    }
+
+    @GetMapping("/{id}/study-annotation")
+    public ResponseEntity<StudyAnnotationResponse> studyAnnotation(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(studyAnnotationService.get(id));
+    }
+
+    @PutMapping("/{id}/study-annotation")
+    public StudyAnnotationResponse saveStudyAnnotation(@PathVariable Long id,
+                                                       @RequestBody StudyAnnotationRequest request) {
+        return studyAnnotationService.save(id, request);
     }
 
     @GetMapping("/{id}")

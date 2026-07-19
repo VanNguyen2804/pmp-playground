@@ -2,7 +2,7 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { APP_RUNTIME_CONFIG, AppRuntimeConfig } from '../app-config';
-import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeAnalytics, PracticeDashboard, WrongQuestionReviewResponse } from '../models/question';
+import { AnswerAttemptRequest, AnswerAttemptResponse, AnswerHistorySummary, CategorySummary, Difficulty, ExplanationReviewStatus, ImportResult, PageResponse, Question, QuestionType, ReclassificationResult, Taxonomy, PracticeAnalytics, PracticeDashboard, WrongQuestionReviewResponse, StudyAnnotation, StudyAnnotationRequest } from '../models/question';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -100,6 +100,19 @@ export class QuestionService {
       .set('shuffle', String(filters.shuffle ?? true));
     if (filters.categoryCode?.trim()) params = params.set('categoryCode', filters.categoryCode.trim());
     return this.http.get<WrongQuestionReviewResponse>(`${this.questionsUrl}/review/wrong`, { params });
+  }
+
+
+  studyAnnotations(questionIds: number[]): Observable<StudyAnnotation[]> {
+    return this.http.post<StudyAnnotation[]>(`${this.questionsUrl}/study-annotations/batch`, { questionIds });
+  }
+
+  studyAnnotation(questionId: number): Observable<StudyAnnotation> {
+    return this.http.get<StudyAnnotation>(`${this.questionsUrl}/${questionId}/study-annotation`);
+  }
+
+  saveStudyAnnotation(questionId: number, request: StudyAnnotationRequest): Observable<StudyAnnotation> {
+    return this.http.put<StudyAnnotation>(`${this.questionsUrl}/${questionId}/study-annotation`, request);
   }
 
   submitAttempt(questionId: number, request: AnswerAttemptRequest): Observable<AnswerAttemptResponse> {
