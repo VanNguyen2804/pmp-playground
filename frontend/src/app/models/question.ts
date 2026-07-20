@@ -133,13 +133,24 @@ export interface AnswerAttemptResponse {
   summary: AnswerHistorySummary;
 }
 
+export type DailyPerformanceStatus = 'NO_DATA' | 'NEW_BASELINE' | 'IMPROVING' | 'STABLE' | 'DECLINING';
+
 export interface PracticeDashboard {
   wrongQuestions: number;
-  weeklyAccuracyPercentage: number;
-  weeklyCorrectAttempts: number;
-  weeklyTotalAttempts: number;
+  todayAccuracyPercentage: number;
+  todayCorrectAttempts: number;
+  todayTotalAttempts: number;
+  yesterdayAccuracyPercentage: number;
+  yesterdayCorrectAttempts: number;
+  yesterdayTotalAttempts: number;
+  dailyAccuracyDeltaPercentagePoints: number;
+  dailyPerformanceStatus: DailyPerformanceStatus;
+  answeredQuestions: number;
+  totalQuestions: number;
+  questionBankCoveragePercentage: number;
   currentCorrectStreak: number;
   dueToday: number;
+  timeZone: string;
 }
 
 export interface WrongQuestionReviewResponse {

@@ -59,8 +59,11 @@ public class QuestionController {
     }
 
     @GetMapping("/practice/dashboard")
-    public PracticeDashboardResponse practiceDashboard() {
-        return answerHistoryService.dashboard();
+    public ResponseEntity<PracticeDashboardResponse> practiceDashboard(
+            @RequestParam(defaultValue = "UTC") String timeZone) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(answerHistoryService.dashboard(timeZone));
     }
 
     @GetMapping("/practice/analytics")

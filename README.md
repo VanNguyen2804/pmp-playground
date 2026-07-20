@@ -127,6 +127,10 @@ curl -X POST http://localhost:8080/api/questions/import/pma-exam \
 
 The import is idempotent. PMA `id` is stored as `external_id`; importing the same export again updates the existing records rather than creating duplicates.
 
+## Practice dashboard metrics
+
+The exam page dashboard shows today's accuracy, performance compared with yesterday, unique questions answered out of the full question bank, wrong questions, and the current correct-answer streak. The frontend passes the browser time zone to `GET /api/questions/practice/dashboard?timeZone=...` so “today” follows the learner's local calendar day. See [DASHBOARD_DAILY_METRICS.md](DASHBOARD_DAILY_METRICS.md).
+
 ## API summary
 
 ### Questions

@@ -1,0 +1,4 @@
+Frontend production build: PASSED
+Command: npm run build
+Backend Maven compile/tests: NOT RUN IN FINAL CONTAINER SESSION
+Reason: Maven executable was unavailable in the final artifact container session.

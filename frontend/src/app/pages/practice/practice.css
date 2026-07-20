@@ -57,3 +57,19 @@
   .session-card-title{flex-direction:column}
   .session-category-label,.session-category-meta{align-items:flex-start}
 }
+
+/* Daily dashboard metrics */
+.dashboard-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.metric-card{min-width:0}
+.metric-card>div:last-child{min-width:0}
+.metric-card.comparison strong{font-size:22px;overflow-wrap:anywhere}
+.metric-card.comparison small,.metric-card.info small{display:block;margin:5px 0 0;line-height:1.35}
+.metric-card.comparison .metric-icon{background:#f2f4f7;color:#475467}
+.metric-card.comparison[data-status="IMPROVING"] .metric-icon{background:#e9f8ef;color:#16a34a}
+.metric-card.comparison[data-status="IMPROVING"] strong{color:#149447}
+.metric-card.comparison[data-status="DECLINING"] .metric-icon{background:#feecec;color:#ef4444}
+.metric-card.comparison[data-status="DECLINING"] strong{color:#d92d20}
+.metric-card.comparison[data-status="STABLE"] .metric-icon{background:#fff3db;color:#f59e0b}
+.metric-card.comparison[data-status="STABLE"] strong{color:#b54708}
+.metric-card.comparison[data-status="NEW_BASELINE"] .metric-icon{background:#eee9ff;color:#6938ef}
+.metric-card.comparison[data-status="NEW_BASELINE"] strong{color:#5925dc}

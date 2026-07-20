@@ -83,28 +83,65 @@ public class QuestionAnswerHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public PracticeDashboardResponse dashboard() {
+    public PracticeDashboardResponse dashboard(String requestedTimeZone) {
+        ZoneId zoneId = resolveZoneId(requestedTimeZone);
+        LocalDate today = LocalDate.now(zoneId);
+        Instant todayStart = today.atStartOfDay(zoneId).toInstant();
+        Instant tomorrowStart = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+        Instant yesterdayStart = today.minusDays(1).atStartOfDay(zoneId).toInstant();
+
         List<QuestionAnswerAttempt> all = attemptRepository.findAllByOrderByAnsweredAtDescIdDesc();
         Map<Long, QuestionAnswerAttempt> latestByQuestion = new LinkedHashMap<>();
         for (QuestionAnswerAttempt attempt : all) {
             latestByQuestion.putIfAbsent(attempt.getQuestion().getId(), attempt);
         }
-        long wrongQuestions = latestByQuestion.values().stream().filter(attempt -> !attempt.isCorrect()).count();
 
-        java.time.Instant weekStart = java.time.Instant.now().minus(java.time.Duration.ofDays(7));
-        List<QuestionAnswerAttempt> weekly = attemptRepository
-                .findByAnsweredAtGreaterThanEqualOrderByAnsweredAtDescIdDesc(weekStart);
-        long weeklyCorrect = weekly.stream().filter(QuestionAnswerAttempt::isCorrect).count();
-        double weeklyAccuracy = weekly.isEmpty() ? 0.0
-                : Math.round((weeklyCorrect * 10_000.0) / weekly.size()) / 100.0;
+        long wrongQuestions = latestByQuestion.values().stream()
+                .filter(attempt -> !attempt.isCorrect())
+                .count();
+        long answeredQuestions = latestByQuestion.size();
+        long totalQuestions = questionRepository.count();
+        double questionBankCoverage = percentage(answeredQuestions, totalQuestions);
+
+        List<QuestionAnswerAttempt> todayAttempts = all.stream()
+                .filter(attempt -> !attempt.getAnsweredAt().isBefore(todayStart))
+                .filter(attempt -> attempt.getAnsweredAt().isBefore(tomorrowStart))
+                .toList();
+        List<QuestionAnswerAttempt> yesterdayAttempts = all.stream()
+                .filter(attempt -> !attempt.getAnsweredAt().isBefore(yesterdayStart))
+                .filter(attempt -> attempt.getAnsweredAt().isBefore(todayStart))
+                .toList();
+
+        long todayCorrect = todayAttempts.stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        long yesterdayCorrect = yesterdayAttempts.stream().filter(QuestionAnswerAttempt::isCorrect).count();
+        double todayAccuracy = percentage(todayCorrect, todayAttempts.size());
+        double yesterdayAccuracy = percentage(yesterdayCorrect, yesterdayAttempts.size());
+        double dailyDelta = round2(todayAccuracy - yesterdayAccuracy);
+        String dailyPerformanceStatus = progressStatus(
+                todayAttempts.size(), yesterdayAttempts.size(), dailyDelta);
 
         long streak = 0;
         for (QuestionAnswerAttempt attempt : all) {
             if (!attempt.isCorrect()) break;
             streak++;
         }
+
         return new PracticeDashboardResponse(
-                wrongQuestions, weeklyAccuracy, weeklyCorrect, weekly.size(), streak, wrongQuestions);
+                wrongQuestions,
+                todayAccuracy,
+                todayCorrect,
+                todayAttempts.size(),
+                yesterdayAccuracy,
+                yesterdayCorrect,
+                yesterdayAttempts.size(),
+                dailyDelta,
+                dailyPerformanceStatus,
+                answeredQuestions,
+                totalQuestions,
+                questionBankCoverage,
+                streak,
+                wrongQuestions,
+                zoneId.getId());
     }
 
     @Transactional(readOnly = true)

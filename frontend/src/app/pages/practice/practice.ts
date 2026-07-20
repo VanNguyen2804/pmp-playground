@@ -42,11 +42,20 @@ export class Practice implements OnInit, OnDestroy {
   readonly categories = signal<CategorySummary[]>([]);
   readonly dashboard = signal<PracticeDashboard>({
     wrongQuestions: 0,
-    weeklyAccuracyPercentage: 0,
-    weeklyCorrectAttempts: 0,
-    weeklyTotalAttempts: 0,
+    todayAccuracyPercentage: 0,
+    todayCorrectAttempts: 0,
+    todayTotalAttempts: 0,
+    yesterdayAccuracyPercentage: 0,
+    yesterdayCorrectAttempts: 0,
+    yesterdayTotalAttempts: 0,
+    dailyAccuracyDeltaPercentagePoints: 0,
+    dailyPerformanceStatus: 'NO_DATA',
+    answeredQuestions: 0,
+    totalQuestions: 0,
+    questionBankCoveragePercentage: 0,
     currentCorrectStreak: 0,
-    dueToday: 0
+    dueToday: 0,
+    timeZone: 'UTC'
   });
   readonly index = signal(0);
   readonly score = signal(0);
@@ -86,6 +95,33 @@ export class Practice implements OnInit, OnDestroy {
   readonly activeHighlightId = signal<string | null>(null);
   readonly noteOpen = signal(false);
   readonly noteDraft = signal('');
+
+  readonly dailyPerformanceValue = computed(() => {
+    const value = this.dashboard();
+    if (value.todayTotalAttempts === 0) return 'Chưa có dữ liệu';
+    if (value.yesterdayTotalAttempts === 0) return 'Mốc mới';
+    const delta = value.dailyAccuracyDeltaPercentagePoints;
+    return `${delta > 0 ? '+' : ''}${delta.toFixed(1)} điểm %`;
+  });
+
+  readonly dailyPerformanceDetail = computed(() => {
+    const value = this.dashboard();
+    if (value.todayTotalAttempts === 0) return 'Hãy trả lời câu đầu tiên hôm nay';
+    if (value.yesterdayTotalAttempts === 0) {
+      return `Hôm nay ${value.todayAccuracyPercentage.toFixed(1)}% · chưa có dữ liệu hôm qua`;
+    }
+    return `Hôm nay ${value.todayAccuracyPercentage.toFixed(1)}% · hôm qua ${value.yesterdayAccuracyPercentage.toFixed(1)}%`;
+  });
+
+  readonly dailyPerformanceIcon = computed(() => {
+    switch (this.dashboard().dailyPerformanceStatus) {
+      case 'IMPROVING': return '↗';
+      case 'DECLINING': return '↘';
+      case 'STABLE': return '≈';
+      case 'NEW_BASELINE': return '◆';
+      default: return '−';
+    }
+  });
 
   readonly current = computed(() => this.questions()[this.index()]);
   readonly currentExplanation = computed(() => {
@@ -156,13 +192,14 @@ export class Practice implements OnInit, OnDestroy {
   private readonly annotationRevisions = new Map<number, number>();
   private readonly annotationDirtyQuestions = new Set<number>();
   private requestVersion = 0;
+  private readonly userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
   constructor(private readonly service: QuestionService) {}
 
   ngOnInit(): void {
     forkJoin({
       categories: this.service.categories().pipe(take(1)),
-      dashboard: this.service.practiceDashboard().pipe(take(1))
+      dashboard: this.service.practiceDashboard(this.userTimeZone).pipe(take(1))
     }).subscribe({
       next: result => {
         this.categories.set(result.categories ?? []);
@@ -706,7 +743,7 @@ export class Practice implements OnInit, OnDestroy {
   }
 
   private refreshDashboard(): void {
-    this.service.practiceDashboard().pipe(take(1)).subscribe({ next: value => this.dashboard.set(value) });
+    this.service.practiceDashboard(this.userTimeZone).pipe(take(1)).subscribe({ next: value => this.dashboard.set(value) });
   }
 
   private selectedAnswerKeys(): string[] {

@@ -1,7 +1,40 @@
 <section class="dashboard-grid">
-  <article class="metric-card danger"><div class="metric-icon">×</div><div><span>Câu sai cần ôn lại</span><strong>{{ dashboard().wrongQuestions }}</strong></div></article>
-  <article class="metric-card success"><div class="metric-icon">↗</div><div><span>Độ chính xác tuần này</span><strong>{{ dashboard().weeklyAccuracyPercentage | number:'1.0-1' }}%</strong><small>{{ dashboard().weeklyCorrectAttempts }}/{{ dashboard().weeklyTotalAttempts }} lượt</small></div></article>
-  <article class="metric-card warning"><div class="metric-icon">♨</div><div><span>Chuỗi đúng liên tiếp</span><strong>{{ dashboard().currentCorrectStreak }}</strong><small>câu</small></div></article>
+  <article class="metric-card danger">
+    <div class="metric-icon">×</div>
+    <div><span>Câu sai cần ôn lại</span><strong>{{ dashboard().wrongQuestions }}</strong></div>
+  </article>
+
+  <article class="metric-card success">
+    <div class="metric-icon">↗</div>
+    <div>
+      <span>Độ chính xác hôm nay</span>
+      <strong>{{ dashboard().todayAccuracyPercentage | number:'1.0-1' }}%</strong>
+      <small>{{ dashboard().todayCorrectAttempts }}/{{ dashboard().todayTotalAttempts }} lượt</small>
+    </div>
+  </article>
+
+  <article class="metric-card comparison" [attr.data-status]="dashboard().dailyPerformanceStatus">
+    <div class="metric-icon">{{ dailyPerformanceIcon() }}</div>
+    <div>
+      <span>Hiệu suất so với hôm qua</span>
+      <strong>{{ dailyPerformanceValue() }}</strong>
+      <small>{{ dailyPerformanceDetail() }}</small>
+    </div>
+  </article>
+
+  <article class="metric-card info">
+    <div class="metric-icon">✓</div>
+    <div>
+      <span>Đã trả lời trong ngân hàng</span>
+      <strong>{{ dashboard().answeredQuestions }}/{{ dashboard().totalQuestions }}</strong>
+      <small>{{ dashboard().questionBankCoveragePercentage | number:'1.0-1' }}% số câu duy nhất</small>
+    </div>
+  </article>
+
+  <article class="metric-card warning">
+    <div class="metric-icon">♨</div>
+    <div><span>Chuỗi đúng liên tiếp</span><strong>{{ dashboard().currentCorrectStreak }}</strong><small>câu</small></div>
+  </article>
 </section>
 
 <section class="practice-heading">

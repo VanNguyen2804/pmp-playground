@@ -86,8 +86,9 @@ export class QuestionService {
   }
 
 
-  practiceDashboard(): Observable<PracticeDashboard> {
-    return this.http.get<PracticeDashboard>(`${this.questionsUrl}/practice/dashboard`);
+  practiceDashboard(timeZone = 'UTC'): Observable<PracticeDashboard> {
+    const params = new HttpParams().set('timeZone', timeZone || 'UTC');
+    return this.http.get<PracticeDashboard>(`${this.questionsUrl}/practice/dashboard`, { params });
   }
 
   practiceSessionReport(sessionId: string, questionIds: number[]): Observable<PracticeSessionReport> {
