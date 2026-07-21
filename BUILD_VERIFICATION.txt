@@ -1,4 +1,10 @@
-Frontend production build: PASSED
-Command: npm run build
-Backend Maven compile/tests: NOT RUN IN FINAL CONTAINER SESSION
-Reason: Maven executable was unavailable in the final artifact container session.
+Frontend verification
+- Command: npm ci
+- Result: PASSED (0 vulnerabilities)
+- Command: npm run build
+- Result: PASSED
+- Note: Angular reported the existing practice.css component budget warning; build completed successfully.
+
+Backend verification
+- Maven executable is not available in this environment, so backend compilation/tests were not run.
+- Backend changes are limited to the dashboard DTO and daily aggregation in QuestionAnswerHistoryService.

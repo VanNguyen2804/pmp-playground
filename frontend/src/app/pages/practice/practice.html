@@ -13,12 +13,29 @@
     </div>
   </article>
 
-  <article class="metric-card comparison" [attr.data-status]="dashboard().dailyPerformanceStatus">
-    <div class="metric-icon">{{ dailyPerformanceIcon() }}</div>
+  <article class="metric-card performance-card" tabindex="0" aria-label="Hiệu suất trung bình theo ngày">
+    <div class="metric-icon">↗</div>
     <div>
-      <span>Hiệu suất so với hôm qua</span>
-      <strong>{{ dailyPerformanceValue() }}</strong>
-      <small>{{ dailyPerformanceDetail() }}</small>
+      <span>Hiệu suất</span>
+      <strong>{{ averagePerformanceValue() }}</strong>
+      <small>{{ averagePerformanceDetail() }}</small>
+    </div>
+
+    <div class="performance-tooltip" role="tooltip">
+      <div class="performance-tooltip-header">
+        <strong>Hiệu suất từng ngày</strong>
+        <span>{{ dashboard().activePerformanceDays }} ngày</span>
+      </div>
+      <div *ngIf="dashboard().dailyPerformanceHistory.length; else noDailyPerformance" class="performance-day-list">
+        <div class="performance-day" *ngFor="let day of dashboard().dailyPerformanceHistory">
+          <span>{{ day.date | date:'dd/MM/yyyy' }}</span>
+          <b>{{ day.accuracyPercentage | number:'1.0-1' }}%</b>
+          <small>{{ day.correctAttempts }}/{{ day.totalAttempts }} lượt</small>
+        </div>
+      </div>
+      <ng-template #noDailyPerformance>
+        <p class="performance-empty">Chưa có dữ liệu trả lời.</p>
+      </ng-template>
     </div>
   </article>
 

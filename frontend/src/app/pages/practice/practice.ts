@@ -50,6 +50,9 @@ export class Practice implements OnInit, OnDestroy {
     yesterdayTotalAttempts: 0,
     dailyAccuracyDeltaPercentagePoints: 0,
     dailyPerformanceStatus: 'NO_DATA',
+    averageDailyAccuracyPercentage: 0,
+    activePerformanceDays: 0,
+    dailyPerformanceHistory: [],
     answeredQuestions: 0,
     totalQuestions: 0,
     questionBankCoveragePercentage: 0,
@@ -96,31 +99,17 @@ export class Practice implements OnInit, OnDestroy {
   readonly noteOpen = signal(false);
   readonly noteDraft = signal('');
 
-  readonly dailyPerformanceValue = computed(() => {
+  readonly averagePerformanceValue = computed(() => {
     const value = this.dashboard();
-    if (value.todayTotalAttempts === 0) return 'Chưa có dữ liệu';
-    if (value.yesterdayTotalAttempts === 0) return 'Mốc mới';
-    const delta = value.dailyAccuracyDeltaPercentagePoints;
-    return `${delta > 0 ? '+' : ''}${delta.toFixed(1)} điểm %`;
+    return value.activePerformanceDays === 0
+      ? 'Chưa có dữ liệu'
+      : `${value.averageDailyAccuracyPercentage.toFixed(1)}%`;
   });
 
-  readonly dailyPerformanceDetail = computed(() => {
-    const value = this.dashboard();
-    if (value.todayTotalAttempts === 0) return 'Hãy trả lời câu đầu tiên hôm nay';
-    if (value.yesterdayTotalAttempts === 0) {
-      return `Hôm nay ${value.todayAccuracyPercentage.toFixed(1)}% · chưa có dữ liệu hôm qua`;
-    }
-    return `Hôm nay ${value.todayAccuracyPercentage.toFixed(1)}% · hôm qua ${value.yesterdayAccuracyPercentage.toFixed(1)}%`;
-  });
-
-  readonly dailyPerformanceIcon = computed(() => {
-    switch (this.dashboard().dailyPerformanceStatus) {
-      case 'IMPROVING': return '↗';
-      case 'DECLINING': return '↘';
-      case 'STABLE': return '≈';
-      case 'NEW_BASELINE': return '◆';
-      default: return '−';
-    }
+  readonly averagePerformanceDetail = computed(() => {
+    const days = this.dashboard().activePerformanceDays;
+    if (days === 0) return 'Chưa có ngày nào được ghi nhận';
+    return `Trung bình của ${days} ngày có làm bài`;
   });
 
   readonly current = computed(() => this.questions()[this.index()]);

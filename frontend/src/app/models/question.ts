@@ -145,6 +145,9 @@ export interface PracticeDashboard {
   yesterdayTotalAttempts: number;
   dailyAccuracyDeltaPercentagePoints: number;
   dailyPerformanceStatus: DailyPerformanceStatus;
+  averageDailyAccuracyPercentage: number;
+  activePerformanceDays: number;
+  dailyPerformanceHistory: DailyAccuracyStatistic[];
   answeredQuestions: number;
   totalQuestions: number;
   questionBankCoveragePercentage: number;

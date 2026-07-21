@@ -1,5 +1,7 @@
 package com.example.pmp.question;
 
+import java.util.List;
+
 public record PracticeDashboardResponse(
         long wrongQuestions,
         double todayAccuracyPercentage,
@@ -10,6 +12,9 @@ public record PracticeDashboardResponse(
         long yesterdayTotalAttempts,
         double dailyAccuracyDeltaPercentagePoints,
         String dailyPerformanceStatus,
+        double averageDailyAccuracyPercentage,
+        long activePerformanceDays,
+        List<DailyAccuracyStatistic> dailyPerformanceHistory,
         long answeredQuestions,
         long totalQuestions,
         double questionBankCoveragePercentage,

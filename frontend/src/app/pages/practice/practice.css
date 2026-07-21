@@ -73,3 +73,24 @@
 .metric-card.comparison[data-status="STABLE"] strong{color:#b54708}
 .metric-card.comparison[data-status="NEW_BASELINE"] .metric-icon{background:#eee9ff;color:#6938ef}
 .metric-card.comparison[data-status="NEW_BASELINE"] strong{color:#5925dc}
+
+
+/* Average daily performance card and hover breakdown */
+.metric-card.performance-card{position:relative;cursor:help}
+.metric-card.performance-card .metric-icon{background:#eee9ff;color:#6938ef}
+.metric-card.performance-card strong{color:#5925dc}
+.metric-card.performance-card:focus{outline:3px solid rgba(105,56,239,.18);outline-offset:2px}
+.performance-tooltip{position:absolute;z-index:30;left:50%;top:calc(100% + 10px);transform:translateX(-50%) translateY(-4px);width:min(330px,calc(100vw - 32px));padding:14px;background:#101828;color:#fff;border-radius:12px;box-shadow:0 18px 45px rgba(16,24,40,.28);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.performance-tooltip:before{content:"";position:absolute;left:50%;top:-7px;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid #101828}
+.performance-card:hover .performance-tooltip,.performance-card:focus .performance-tooltip,.performance-card:focus-within .performance-tooltip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.performance-tooltip-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.14)}
+.performance-tooltip-header strong{font-size:14px;color:#fff;margin:0}
+.performance-tooltip-header span{font-size:12px;color:#d0d5dd}
+.performance-day-list{max-height:280px;overflow:auto;margin-top:7px;padding-right:3px}
+.performance-day{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.10)}
+.performance-day:last-child{border-bottom:0}
+.performance-day>span{font-size:13px;color:#e4e7ec}
+.performance-day>b{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:15px;color:#fff}
+.performance-day>small{grid-column:1;display:block;margin:0;color:#98a2b3;font-size:11px}
+.performance-empty{margin:12px 0 2px;color:#d0d5dd;font-size:13px}
+@media(max-width:700px){.performance-tooltip{left:0;transform:translateY(-4px)}.performance-card:hover .performance-tooltip,.performance-card:focus .performance-tooltip,.performance-card:focus-within .performance-tooltip{transform:translateY(0)}.performance-tooltip:before{left:28px;transform:none}}

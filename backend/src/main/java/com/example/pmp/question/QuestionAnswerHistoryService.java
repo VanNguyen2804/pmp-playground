@@ -120,6 +120,22 @@ public class QuestionAnswerHistoryService {
         String dailyPerformanceStatus = progressStatus(
                 todayAttempts.size(), yesterdayAttempts.size(), dailyDelta);
 
+        Map<LocalDate, DailyAccumulator> performanceByDate = new TreeMap<>();
+        for (QuestionAnswerAttempt attempt : all) {
+            LocalDate date = attempt.getAnsweredAt().atZone(zoneId).toLocalDate();
+            performanceByDate.computeIfAbsent(date, DailyAccumulator::new).accept(attempt);
+        }
+        List<DailyAccuracyStatistic> dailyPerformanceHistory = performanceByDate.values().stream()
+                .map(DailyAccumulator::toRecord)
+                .sorted(Comparator.comparing(DailyAccuracyStatistic::date).reversed())
+                .toList();
+        double averageDailyAccuracy = dailyPerformanceHistory.isEmpty()
+                ? 0.0
+                : round2(dailyPerformanceHistory.stream()
+                        .mapToDouble(DailyAccuracyStatistic::accuracyPercentage)
+                        .average()
+                        .orElse(0.0));
+
         long streak = 0;
         for (QuestionAnswerAttempt attempt : all) {
             if (!attempt.isCorrect()) break;
@@ -136,6 +152,9 @@ public class QuestionAnswerHistoryService {
                 yesterdayAttempts.size(),
                 dailyDelta,
                 dailyPerformanceStatus,
+                averageDailyAccuracy,
+                dailyPerformanceHistory.size(),
+                dailyPerformanceHistory,
                 answeredQuestions,
                 totalQuestions,
                 questionBankCoverage,
